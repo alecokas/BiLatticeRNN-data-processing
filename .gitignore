@@ -102,3 +102,14 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# data 
+files to ignore
+*.lat
+*.lat.gz
+*.mlf
+*.npy
+*.dat
+*.pickle
+*.txt
+*.png

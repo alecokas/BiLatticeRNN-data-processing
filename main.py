@@ -73,7 +73,7 @@ def save_train_val_test_split(reference_dict, path_list, target_destination):
     """
     """
     for dataset_name, lattice_set in reference_dict.items():
-        dataset_list = [path for path in path_list if path in lattice_set]
+        dataset_list = [path for path in path_list if not path in lattice_set]
         save_txt_file(dataset_list, os.path.join(target_destination, dataset_name))
         
 
@@ -86,7 +86,7 @@ def save_txt_file(path_list, txt_file_name):
     # Write to new file
     with open(txt_file_name, 'a+') as txt_file:
         for path in path_list:
-            txt_file.write(path + '\n')
+            txt_file.write(path + '.txt\n')
 
 
 def main(args):

@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 from subprocess import call
 import sys
 
@@ -67,13 +68,23 @@ def read_reference_lst_files(dataset_split_dir='info/reference-lists'):
         file_set = set(line.strip() for line in open(file_path))
         dataset_name = dataset.split('.')[0]
         dataset_dict[dataset_name] = file_set
+        print(file_set)
+        print()
+        print()
+        print()
+        print()
     return dataset_dict
     
 def save_train_val_test_split(reference_dict, path_list, target_destination):
     """
     """
+    lattice_name_list = []
+    for abs_path in path_list:
+        result = re.search(r'.*\/(.*)(\.lat\.gz)', abs_path)
+        lattice_name_list.append(result.group(1))
+    print(lattice_name_list[0:3])
     for dataset_name, lattice_set in reference_dict.items():
-        dataset_list = [path for path in path_list if not path in lattice_set]
+        dataset_list = [name for name in lattice_name_list if name in lattice_set]
         save_txt_file(dataset_list, os.path.join(target_destination, dataset_name))
         
 

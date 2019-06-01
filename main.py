@@ -39,17 +39,58 @@ def unzip(input_dir, target_directory):
             else:
                 raise Exception('The target file must have the .gz extension.')
 
-def compile_lattice_list(lst_destination,
+def compile_lattice_list(destination='info/abs-dataset-paths',
                          base_directory='/home/dawna/babel/BABEL_OP3_404/releaseB/exp-graphemic-ar527-v3/J2/decode-ibmseg-fcomb/test/'):
     subsets = ['dev', 'eval']
+    path_list = []
     for subset in subsets:
-        print(os.path.join(base_directory,subset))
-        speaker_dirs = next(os.walk(os.path.join(base_directory,subset)))[1]
+        subset_dir = os.path.join(base_directory,subset)
+        speaker_dirs = next(os.walk(os.path.join(base_directory, subset)))[1]
         for speaker_dir in speaker_dirs:
-            raw_lattice_dir = os.path.join(speaker_dir, '/decode/rescore/tg_20.0_0.0/rescore/wlat_20.0_0.0/rescore/plat_20.0_0.0/lattices')
+            raw_lattice_dir = os.path.join(subset_dir, speaker_dir, 'decode/rescore/tg_20.0_0.0/rescore/wlat_20.0_0.0/rescore/plat_20.0_0.0/lattices')
             raw_lattice_list = next(os.walk(raw_lattice_dir))[2]
-            print(raw_lattice_list)
+            for lattice_name in raw_lattice_list:
+                abs_path = os.path.join(raw_lattice_dir, lattice_name)
+                path_list.append(abs_path)
+    return path_list
+
+
+def read_reference_lst_files(dataset_split_dir='info/reference-lists'):
+    """ Read in the files containing the reference for which lattices are in the
+        train, cross-validation, and test sets. These are stored in 3 sets which
+        can be indexed from a dictionary.
+    """
+    datasets = ['train.lst', 'cv.lst', 'test.lst']
+    dataset_dict = {}
+    for dataset in datasets:
+        file_path = os.path.join(dataset_split_dir, dataset)
+        file_set = set(line.strip() for line in open(file_path))
+        dataset_name = dataset.split('.')[0]
+        dataset_dict[dataset_name] = file_set
+    return dataset_dict
     
+def save_train_val_test_split(reference_dict, path_list):
+    """
+    """
+    for dataset_name, lattice_set in reference_dict.items():
+        dataset_list = []
+        for idx, path in enumerate(list(path_list)):
+            if path in lattice_set:
+                dataset_list.append(path_list.pop(idx))
+            print(len(path_list))
+        
+
+def save_txt_file(path_list, txt_file_name):
+    # Remove file if it exists
+    try:
+        os.remove(txt_file_name)
+    except OSError:
+        pass
+    # Write to new file
+    with open(txt_file_name, 'a+') as txt_file:
+        for path in path_list:
+            txt_file.write(path + '\n')
+
 
 def main(args):
     """ Primary entry point for the script. """
@@ -57,7 +98,9 @@ def main(args):
     #     input_dir=args.input_dir,
     #     target_directory=args.output_dir
     # )
-    compile_lattice_list(None)
+    reference_dict = read_reference_lst_files()
+    path_list = compile_lattice_list()
+    save_train_val_test_split(reference_dict, path_list)
 
 
 

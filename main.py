@@ -69,15 +69,12 @@ def read_reference_lst_files(dataset_split_dir='info/reference-lists'):
         dataset_dict[dataset_name] = file_set
     return dataset_dict
     
-def save_train_val_test_split(reference_dict, path_list):
+def save_train_val_test_split(reference_dict, path_list, target_destination):
     """
     """
     for dataset_name, lattice_set in reference_dict.items():
-        dataset_list = []
-        for idx, path in enumerate(list(path_list)):
-            if path in lattice_set:
-                dataset_list.append(path_list.pop(idx))
-            print(len(path_list))
+        dataset_list = [path for path in path_list if path in lattice_set]
+        save_txt_file(dataset_list, os.path.join(target_destination, dataset_name))
         
 
 def save_txt_file(path_list, txt_file_name):
@@ -100,7 +97,7 @@ def main(args):
     # )
     reference_dict = read_reference_lst_files()
     path_list = compile_lattice_list()
-    save_train_val_test_split(reference_dict, path_list)
+    save_train_val_test_split(reference_dict, path_list, 'info/abs-dataset-paths/')
 
 
 

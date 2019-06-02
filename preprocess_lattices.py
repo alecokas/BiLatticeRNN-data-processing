@@ -138,7 +138,7 @@ def main():
     parser = argparse.ArgumentParser(description='lattice pre-processing')
     # parser.add_argument('language_code', type=str,
     #                     help='babel language code')
-    parser.add_argument('-d', 'dst-dir', type=str,
+    parser.add_argument('-d', '--dst-dir', type=str,
                         help='Location to save the uncompressed lattice files (*.npz)')
     parser.add_argument(
         '-e', '--embedding', type=str, required=True,
@@ -146,8 +146,8 @@ def main():
     )
     # parser.add_argument('dataset', type=str,
     #                     help='dataset name')
-    parser.add_argument('-f', '--file-list', type=str,
-                        help='A file containing a list of lattice absolute paths')
+    parser.add_argument('-f', '--file-list-dir', type=str,
+                        help='The directory containing the files with the lists of lattice absolute paths for each subset')
     # parser.add_argument('root_dir', type=str, help='root experimental directory')
     parser.add_argument('-v', '--verbose',
                         help='Set logging level: ERROR (default), '\
@@ -161,21 +161,27 @@ def main():
     global LOGGER
     LOGGER = utils.get_logger(args.verbose)
 
-    # data_dir = os.path.join(args.root_dir, args.language_code, 'data', args.dataset)
+    dst_dir = args.dst_dir
     utils.check_dir(args.dst_dir)
+    file_list_dir = args.file_list_dir
+    utils.check_dir(args.dst_dir)
+
     wordvec_path = os.path.join(args.embedding)
-    dst_dir = os.path.join(args.dst_dir)
-    utils.mkdir(dst_dir)
-    wordvec = load_wordvec(wordvec_path)
 
-    lattice_list = []
-    with open(os.path.abspath(args.file_list), 'r') as file_in:
-        for line in file_in:
-            lattice_list.append(line.strip())
+    subset_list = ['train.txt', 'cv.txt', 'test.txt']
 
-    with Pool(args.num_threads) as pool:
-        pool.starmap(process_one_lattice, zip(lattice_list, repeat(dst_dir),
-                                              repeat(wordvec)))
+    for subset in subset_list:
+        file_list = os.path.join(file_list_dir, subset)
+        wordvec = load_wordvec(wordvec_path)
+
+        lattice_list = []
+        with open(os.path.abspath(file_list), 'r') as file_in:
+            for line in file_in:
+                lattice_list.append(line.strip())
+
+        with Pool(args.num_threads) as pool:
+            pool.starmap(process_one_lattice, zip(lattice_list, repeat(dst_dir),
+                                                repeat(wordvec)))
 
 if __name__ == '__main__':
     main()

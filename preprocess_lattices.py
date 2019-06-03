@@ -12,16 +12,20 @@ import re
 from toposort import toposort_flatten
 
 import utils
-from posterior import Dag
 
-EMBEDDING_LENGTH = 4
+EMBEDDING_LENGTH = 50
+MAX_ARC_INFO = 10
+SUBWORD_PROPERTIES = 2
+HEADER_LINE_COUNT = 7
 
-def read_lattice(lattice_path):
+
+def read_lattice(lattice_path, subword_embedding):
     """Read HTK lattices.
 
     Arguments:
         lattice_path {string} -- absolute path of a compressed lattice
             in `.lat.gz` format
+        subword_embedding -- subword embeddings
 
     Returns:
         nodes {list} -- indexed by nodeID, each element is [time, word]
@@ -41,7 +45,7 @@ def read_lattice(lattice_path):
     child_2_parent = {}
     parent_2_child = {}
     with gzip.open(lattice_path, 'rt', encoding='utf-8') as file_in:
-        for i in range(8):
+        for i in range(HEADER_LINE_COUNT):
             _ = file_in.readline()
         counts = file_in.readline().split()
         if len(counts) != 2 or counts[0].startswith('N=') is False \
@@ -66,7 +70,7 @@ def read_lattice(lattice_path):
             am_score = float(line[3].split('=')[1])
             lm_score = float(line[4].split('=')[1])
             # post = float(line[5].split('=')[1])
-            grapheme_info = get_grapheme(line[4].split('=')[1])
+            grapheme_info = get_grapheme(line[5].split('=')[1], subword_embedding)
             edges.append([parent, child, am_score, lm_score] + grapheme_info)
             if child not in dependency:
                 dependency[child] = {parent}
@@ -80,15 +84,19 @@ def read_lattice(lattice_path):
                 parent_2_child[parent][child] = edge_id
     return nodes, edges, dependency, child_2_parent, parent_2_child
 
-def get_grapheme(raw_input):
+def get_grapheme(grapheme_info, subword_embedding):
+    """ Separate all graphemes and durations into two separate lists.
+        Return the result of concatenating these two lists.
+    """
     token_durs = []
     token_list = []
-    subword_list = raw_input.split(':')
+    subword_list = grapheme_info.split(':')[1:-1]
     for subword_info in subword_list:
         subword, subword_dur = subword_info.split(',')
-        token_durs = token_durs + float(subword_dur)
-        token_list = token_list + strip_phone(subword, 1, False)
-    print(token_list)
+        token_durs.append(subword_dur)
+        token = strip_phone(subword, 1, False)
+        token_list.append(subword_embedding[token].tolist())
+    return token_list + token_durs
 
 
 def strip_phone(phone_info, phone_context_width, incl_posn_info):
@@ -129,10 +137,10 @@ def remove_location_indicator(phone_with_location):
     else:
         return phone_with_location.split('^')[0]
 
-# def arc_posterior(htk_file):
-#     """Get arc posterior from htk file."""
-#     lattice = Dag(htk_file=htk_file)
-#     return lattice.arc_posterior(aw=0.05, lw=1.0)
+def chunks(l, n):
+    """Yield successive n-sized chunks from list l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
 
 def load_wordvec(path):
     """Load pre-computed word vectors.
@@ -148,13 +156,14 @@ def load_wordvec(path):
     wordvec = np.load(path).item()
     return wordvec
 
-def process_one_lattice(lattice_path, dst_dir, wordvec):
+def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding):
     """Process a single lattice.
 
     Arguments:
         lattice_path {str} -- absolute path to lattices `.lat.gz`
         dst_dir {str} -- absolute path to destination directory
         wordvec {dict} -- word vector by calling `load_wordvec`
+        subword_embedding {dict} -- subword embeddings
     """
     name = lattice_path.split('/')[-1].split('.')[0] + '.npz'
     try:
@@ -162,21 +171,24 @@ def process_one_lattice(lattice_path, dst_dir, wordvec):
         name = os.path.join(dst_dir, name)
         if not os.path.isfile(name):
             nodes, edges, dependency, child_2_parent, parent_2_child = \
-                read_lattice(lattice_path)
+                read_lattice(lattice_path, subword_embedding)
             topo_order = toposort_flatten(dependency)
             # posterior = arc_posterior(lattice_path)
             # for each edge, the information contains
-            # [EMBEDDING_LENGTH, duration(1), AM(1), LM(1), arc_posterior(1)]
-            edge_data = np.empty((len(edges), EMBEDDING_LENGTH + 1 + 1 + 1 + 1))
+            # [EMBEDDING_LENGTH, duration(1), AM(1), LM(1), arc_posterior(1) or grapheme_info(MAX_ARC_INFO * 2)]
+            edge_data = np.empty((len(edges), EMBEDDING_LENGTH + 1 + 1 + 1 + MAX_ARC_INFO * SUBWORD_PROPERTIES))
             ignore = []
             for i, edge in enumerate(edges):
                 start_node = edge[0]
                 end_node = edge[1]
                 time = nodes[end_node][0] - nodes[start_node][0]
                 word = nodes[end_node][1]
-                edge_data[i] = np.concatenate(
-                    (wordvec[word], np.array([time, edge[2], edge[3],
-                                              np.exp(edge[4])])), axis=0)
+
+                padded_subword_data = pad_subword(edge[4])
+                word_edge_data = np.concatenate(
+                    (wordvec[word], np.array([time, edge[2], edge[3]])), axis=0)
+
+                edge_data[i] = np.append(word_edge_data, padded_subword_data)
                 if word in ['<s>', '</s>', '!NULL', '<hes>']:
                     ignore.append(i)
             # save multiple variables into one .npz file
@@ -186,29 +198,51 @@ def process_one_lattice(lattice_path, dst_dir, wordvec):
     except OSError as exception:
         LOGGER.info('%s\n' %lattice_path + str(exception))
 
+def pad_subword(subword_edge_features):
+    """ The subword data (graphemic / phonetic) can be of variable length. In order to store
+        this data in a numpy array, one assumes a maximum subword length and pad all shorter
+        subwords to that length.
+    """
+    total_pad_count = MAX_ARC_INFO * SUBWORD_PROPERTIES - len(subword_edge_features)
+    pads_per_chunk = int(total_pad_count / SUBWORD_PROPERTIES)
+    subword_edge_data = list(chunks(subword_edge_features, SUBWORD_PROPERTIES))
+
+    padded_subword_data = []
+    for edge_chunk in subword_edge_data:
+        padded_subword_data = padded_subword_data + edge_chunk + pads_per_chunk * [0]
+
+    return padded_subword_data
+
 def main():
     """Main function for lattice preprocessing."""
     parser = argparse.ArgumentParser(description='lattice pre-processing')
-    # parser.add_argument('language_code', type=str,
-    #                     help='babel language code')
-    parser.add_argument('-d', '--dst-dir', type=str,
-                        help='Location to save the uncompressed lattice files (*.npz)')
+
+    parser.add_argument(
+        '-d', '--dst-dir', type=str,
+        help='Location to save the uncompressed lattice files (*.npz)'
+    )
     parser.add_argument(
         '-e', '--embedding', type=str, required=True,
-        help='Full path to the file containing a dictionary with the embeddings'
+        help='Full path to the file containing a dictionary with the grapheme / phone embeddings'
     )
-    # parser.add_argument('dataset', type=str,
-    #                     help='dataset name')
-    parser.add_argument('-f', '--file-list-dir', type=str,
-                        help='The directory containing the files with the lists of lattice absolute paths for each subset')
-    # parser.add_argument('root_dir', type=str, help='root experimental directory')
-    parser.add_argument('-v', '--verbose',
-                        help='Set logging level: ERROR (default), '\
-                             'WARNING (-v), INFO (-vv), DEBUG (-vvv)',
-                        action='count', default=0)
-    parser.add_argument('-n', '--num-threads',
-                        help='The number of threads to use for concurrency',
-                        type=int, default=30)
+    parser.add_argument(
+        '-w', '--wordvec', type=str, required=True,
+        help='Full path to the file containing a dictionary with the word vector embeddings'
+    )
+    parser.add_argument(
+        '-f', '--file-list-dir', type=str,
+        help='The directory containing the files with the lists of lattice absolute paths for each subset'
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        help='Set logging level: ERROR (default), WARNING (-v), INFO (-vv), DEBUG (-vvv)',
+        action='count', default=0
+    )
+    parser.add_argument(
+        '-n', '--num-threads',
+        help='The number of threads to use for concurrency',
+        type=int, default=30
+    )
     args = parser.parse_args()
 
     global LOGGER
@@ -219,12 +253,14 @@ def main():
     file_list_dir = args.file_list_dir
     utils.check_dir(args.dst_dir)
 
-    wordvec_path = os.path.join(args.embedding)
+    subword_embedding_path = os.path.join(args.embedding)
+    wordvec_path = os.path.join(args.wordvec)
 
     subset_list = ['train.txt', 'cv.txt', 'test.txt']
 
     for subset in subset_list:
         file_list = os.path.join(file_list_dir, subset)
+        subword_embedding = load_wordvec(subword_embedding_path)
         wordvec = load_wordvec(wordvec_path)
 
         lattice_list = []
@@ -234,7 +270,7 @@ def main():
 
         with Pool(args.num_threads) as pool:
             pool.starmap(process_one_lattice, zip(lattice_list, repeat(dst_dir),
-                                                repeat(wordvec)))
+                                                repeat(wordvec), repeat(subword_embedding)))
 
 if __name__ == '__main__':
     main()

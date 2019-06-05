@@ -177,6 +177,7 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding):
             # for each edge, the information contains
             # [EMBEDDING_LENGTH, duration(1), AM(1), LM(1), arc_posterior(1) or grapheme_info(MAX_ARC_INFO * 2)]
             edge_data = np.empty((len(edges), EMBEDDING_LENGTH + 1 + 1 + 1 + MAX_ARC_INFO * SUBWORD_PROPERTIES))
+            mask_data = np.empty((len(edges), EMBEDDING_LENGTH + 1 + 1 + 1 + MAX_ARC_INFO * SUBWORD_PROPERTIES))
             ignore = []
             for i, edge in enumerate(edges):
                 start_node = edge[0]
@@ -184,16 +185,20 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding):
                 time = nodes[end_node][0] - nodes[start_node][0]
                 word = nodes[end_node][1]
 
-                padded_subword_data = pad_subword(edge[4])
+                padded_subword_data, subword_mask = pad_subword(edge[4])
                 word_edge_data = np.concatenate(
                     (wordvec[word], np.array([time, edge[2], edge[3]])), axis=0)
 
                 edge_data[i] = np.append(word_edge_data, padded_subword_data)
+
+                ones = len(word_edge_data) * [1]
+                mask_data[i] = np.append(ones, subword_mask)
+
                 if word in ['<s>', '</s>', '!NULL', '<hes>']:
                     ignore.append(i)
             # save multiple variables into one .npz file
             np.savez(name, topo_order=topo_order, child_2_parent=child_2_parent,
-                     parent_2_child=parent_2_child, edge_data=edge_data,
+                     parent_2_child=parent_2_child, edge_data=edge_data, mask_data=mask_data,
                      ignore=ignore)
     except OSError as exception:
         LOGGER.info('%s\n' %lattice_path + str(exception))
@@ -203,6 +208,7 @@ def pad_subword(subword_edge_features):
         this data in a numpy array, one assumes a maximum subword length and pad all shorter
         subwords to that length.
     """
+    mask = []
     total_pad_count = MAX_ARC_INFO * SUBWORD_PROPERTIES - len(subword_edge_features)
     pads_per_chunk = int(total_pad_count / SUBWORD_PROPERTIES)
     subword_edge_data = list(chunks(subword_edge_features, SUBWORD_PROPERTIES))
@@ -210,8 +216,8 @@ def pad_subword(subword_edge_features):
     padded_subword_data = []
     for edge_chunk in subword_edge_data:
         padded_subword_data = padded_subword_data + edge_chunk + pads_per_chunk * [0]
-
-    return padded_subword_data
+        mask = mask + len(edge_chunk) * [1] + pads_per_chunk * [0]
+    return padded_subword_data, mask
 
 def main():
     """Main function for lattice preprocessing."""

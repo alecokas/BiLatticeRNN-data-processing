@@ -19,7 +19,7 @@ SUBWORD_PROPERTIES = 2
 HEADER_LINE_COUNT = 7
 
 
-def read_lattice(lattice_path, subword_embedding):
+def read_lattice(lattice_path, subword_embedding=None):
     """Read HTK lattices.
 
     Arguments:
@@ -95,7 +95,10 @@ def get_grapheme(grapheme_info, subword_embedding):
         subword, subword_dur = subword_info.split(',')
         token_durs.append(subword_dur)
         token = strip_phone(subword, 1, False)
-        token_list.append(subword_embedding[token].tolist())
+        if subword_embedding is None:
+            token_list.append([0])
+        else:
+            token_list.append(subword_embedding[token].tolist())
     return token_list + token_durs
 
 
@@ -170,8 +173,7 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding):
         LOGGER.info(name)
         name = os.path.join(dst_dir, name)
         if not os.path.isfile(name):
-            nodes, edges, dependency, child_2_parent, parent_2_child = \
-                read_lattice(lattice_path, subword_embedding)
+            nodes, edges, dependency, child_2_parent, parent_2_child = read_lattice(lattice_path, subword_embedding)
             topo_order = toposort_flatten(dependency)
             # posterior = arc_posterior(lattice_path)
             # for each edge, the information contains

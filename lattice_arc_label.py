@@ -160,7 +160,7 @@ def main():
         help='The directory containing the file lists for the train, cv, and test sets.'
     )
     parser.add_argument(
-        '-n', '--num_threads',
+        '-n', '--num-threads',
         help='number of threads to use for concurrency',
         type=int, default=30
     )
@@ -186,11 +186,6 @@ def main():
     baseline_dict = load_baseline(args.one_best)
     dst_dir = os.path.join(args.dst_dir, 'target_overlap_{}'.format(args.threshold))
     utils.mkdir(dst_dir)
-
-    lattice_list = []
-    with open(os.path.abspath(args.file_list_dir), 'r') as file_in:
-        for line in file_in:
-            lattice_list.append(line.strip())
 
     subset_list = ['train.txt', 'cv.txt', 'test.txt']
     for subset in subset_list:

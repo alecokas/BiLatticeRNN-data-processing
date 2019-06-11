@@ -17,16 +17,17 @@ def get_segments(file_name):
             line = line.split()
             if line[0].startswith(';;'):
                 count += 1
-            elif len(line) >= 5:
-                if line[0] == pre_segment:
-                    count += 1
-                else:
-                    segments.append(line[0])
-                    pre_segment = line[0]
-                    num_lines.append(count)
-                    count = 1
             else:
-                num_lines.append(count)
+                if len(line) > 5:
+                    if line[0] == pre_segment:
+                        count += 1
+                    else:
+                        segments.append(line[0])
+                        pre_segment = line[0]
+                        num_lines.append(count)
+                        count = 1
+                else:
+                    num_lines.append(count)
     assert len(segments) == len(num_lines), "%i != %i" %(len(segments), len(num_lines))
     return segments, num_lines
 
@@ -40,7 +41,7 @@ def split_stm(file_name, segments, num_lines, dst_dir):
             word = []
             for _ in range(num_line):
                 line = next(file_in).split()
-                assert line[0] == segment, "Mismatch!"
+                assert line[0] == segment, "Mismatch between {} and {}".format(line[0], segment)
                 time.append(float(line[2]))
                 duration.append(float(line[3]))
                 word.append(line[4])

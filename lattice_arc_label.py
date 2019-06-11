@@ -71,7 +71,7 @@ def load_baseline(file_name):
     with open(file_name, 'r', encoding='utf-8') as file_in:
         for line in file_in:
             if line.startswith("\""):
-                utt_id = line.strip().strip("\"").split("/")[-1].strip(".rec")
+                utt_id = line.strip().strip("\"").split("/")[-1].strip(".lab")
                 sequence = []
                 ref_label = []
                 while True:
@@ -157,7 +157,7 @@ def main():
     parser = argparse.ArgumentParser(description='lattice pre-processing')
     parser.add_argument(
         '-f', '--file-list-dir', type=str,
-        help='The directory containing the file lists of lattice paths'
+        help='The directory containing the file lists for the train, cv, and test sets.'
     )
     parser.add_argument(
         '-n', '--num_threads',
@@ -174,8 +174,8 @@ def main():
         help='Path to the one best transciption (*.mlf.det file).'
     )
     parser.add_argument(
-        '-stm', '--ref-stm', type=str, required=True,
-        help='Reference stm files for arc tagging (*.stm file).'
+        '-stm', '--stm-dir', type=str, required=True,
+        help='Direcvtory containing reference stm files for arc tagging (*.stm file).'
     )
     parser.add_argument(
         '-d', '--dst-dir', type=str, required=True,
@@ -188,7 +188,7 @@ def main():
     utils.mkdir(dst_dir)
 
     lattice_list = []
-    with open(os.path.abspath(args.fileList), 'r') as file_in:
+    with open(os.path.abspath(args.file_list_dir), 'r') as file_in:
         for line in file_in:
             lattice_list.append(line.strip())
 
@@ -202,7 +202,7 @@ def main():
             lattice_list.append(line.strip())
 
     with Pool(args.num_threads) as pool:
-        pool.starmap(label, zip(lattice_list, repeat(args.ref_stm), repeat(dst_dir),
+        pool.starmap(label, zip(lattice_list, repeat(args.stm_dir), repeat(dst_dir),
                                 repeat(baseline_dict), repeat(args.threshold)))
 
 if __name__ == '__main__':

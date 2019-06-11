@@ -17,7 +17,7 @@ def get_segments(file_name):
             line = line.split()
             if line[0].startswith(';;'):
                 count += 1
-            elif len(line) == 5:
+            elif len(line) >= 5:
                 if line[0] == pre_segment:
                     count += 1
                 else:
@@ -27,9 +27,8 @@ def get_segments(file_name):
                     count = 1
             else:
                 num_lines.append(count)
-    assert len(segments) == len(num_lines) - 1, \
-           "%i != %i" %(len(segments), len(num_lines) -1)
-    return segments, num_lines[1:]
+    assert len(segments) == len(num_lines), "%i != %i" %(len(segments), len(num_lines))
+    return segments, num_lines
 
 def split_stm(file_name, segments, num_lines, dst_dir):
     """Split stm into multiple smaller ones by segments."""

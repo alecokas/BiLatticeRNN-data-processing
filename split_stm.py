@@ -15,7 +15,9 @@ def get_segments(file_name):
     with open(file_name, 'r') as file_in:
         for line in file_in:
             line = line.split()
-            if len(line) == 5:
+            if line[0].startswith(';;'):
+                count += 1
+            elif len(line) == 5:
                 if line[0] == pre_segment:
                     count += 1
                 else:
@@ -51,7 +53,7 @@ def main():
         description='Split the two *.stm alignment files into the respective lattice file directories'
     )
     parser.add_argument(
-        '-o', '--output-dir', type=str, require=True,
+        '-o', '--output-dir', type=str, required=True,
         help='Destination directory for the split output files'
     )
     parser.add_argument(

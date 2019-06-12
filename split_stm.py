@@ -46,10 +46,11 @@ def split_stm(file_name, segments, num_lines, dst_dir):
             for _ in range(num_line):
                 line = next(file_in).split()
                 counter += 1
-                assert line[0] == segment, "Mismatch between {} and {}".format(line[0], segment)
-                time.append(float(line[2]))
-                duration.append(float(line[3]))
-                word.append(line[4])
+                if line[0] != ';;': 
+                    assert line[0] == segment, "Mismatch between {} and {}".format(line[0], segment)
+                    time.append(float(line[2]))
+                    duration.append(float(line[3]))
+                    word.append(line[4])
             np.savez(dst_file, time=time, duration=duration, word=word)
 
 def num_lines_in_file(file_name):
@@ -80,7 +81,7 @@ def main():
     args = parser.parse_args()
 
     if os.path.isfile(args.dev_stm) and os.path.isfile(args.eval_stm):
-        stm_files = [args.dev_stm, args.eval_stm]
+        stm_files = [args.dev_stm] #, args.eval_stm]
     else:
         raise FileNotFoundError('Please ensure that both {} and {} are valid files'.format(args.dev_stm, args.eval_stm))
 

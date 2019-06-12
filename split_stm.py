@@ -8,11 +8,12 @@ import utils
 
 def get_segments(file_name):
     """Get segments names and number of lines for each segment."""
-    segments = []
-    num_lines = []
-    pre_segment = ""
     count = 1
+    total_num_lines = num_lines_in_file(file_name)
     with open(file_name, 'r') as file_in:
+        pre_segment =  file_in.readline().split()[0]
+        segments = [pre_segment]
+        num_lines = []
         for line in file_in:
             line = line.split()
             if line[0].startswith(';;'):
@@ -28,12 +29,15 @@ def get_segments(file_name):
                         count = 1
                 else:
                     num_lines.append(count)
+        last_num_lines_entry = total_num_lines - num_lines[-1]
+        num_lines.append(last_num_lines_entry)
     assert len(segments) == len(num_lines), "%i != %i" %(len(segments), len(num_lines))
     return segments, num_lines
 
 def split_stm(file_name, segments, num_lines, dst_dir):
     """Split stm into multiple smaller ones by segments."""
     with open(file_name, 'r') as file_in:
+        counter = 0
         for segment, num_line in zip(segments, num_lines):
             dst_file = os.path.join(dst_dir, segment + '.npz')
             time = []
@@ -41,11 +45,20 @@ def split_stm(file_name, segments, num_lines, dst_dir):
             word = []
             for _ in range(num_line):
                 line = next(file_in).split()
+                counter += 1
                 assert line[0] == segment, "Mismatch between {} and {}".format(line[0], segment)
                 time.append(float(line[2]))
                 duration.append(float(line[3]))
                 word.append(line[4])
             np.savez(dst_file, time=time, duration=duration, word=word)
+
+def num_lines_in_file(file_name):
+    """ Count the number of lines in a file, return num lines is zero if the file is empty """
+    line_idx = -1
+    with open(file_name) as file:
+        for line_idx, _ in enumerate(file):
+            pass
+    return line_idx + 1
 
 def main():
     """Main function for spliting `.stm` into `.npz` segnemts."""

@@ -29,7 +29,7 @@ def get_segments(file_name):
                         count = 1
                 else:
                     num_lines.append(count)
-        last_num_lines_entry = total_num_lines - num_lines[-1]
+        last_num_lines_entry = total_num_lines - sum(num_lines)
         num_lines.append(last_num_lines_entry)
     assert len(segments) == len(num_lines), "%i != %i" %(len(segments), len(num_lines))
     return segments, num_lines
@@ -81,7 +81,7 @@ def main():
     args = parser.parse_args()
 
     if os.path.isfile(args.dev_stm) and os.path.isfile(args.eval_stm):
-        stm_files = [args.dev_stm] #, args.eval_stm]
+        stm_files = [args.dev_stm, args.eval_stm]
     else:
         raise FileNotFoundError('Please ensure that both {} and {} are valid files'.format(args.dev_stm, args.eval_stm))
 

@@ -152,37 +152,6 @@ def label(lattice_path, stm_dir, dst_dir, baseline_dict, threshold=0.5):
             print(name, indices, ref)
             print(seq_1, seq_2)
 
-def path_to_mlf(original_path, relative_path, mlf_prefix):
-    """ Generate the bath to the MLF file which provides the one best reference for
-        a given speaker.
-    """
-    mlf_dir = modify_path(original_path, relative_path)
-    speaker_call_name = original_path.split('/')[-1].split('_')[0]
-    speaker_name = '-'.join(speaker_call_name.pslit('-')[:2] + speaker_call_name.pslit('-')[-1])
-    print('speaker_name: ' + speaker_name)
-    return os.path.join(mlf_dir, mlf_prefix + speaker_name + '.mlf')
-
-def modify_path(original_path, relative_path):
-    """ Modify a string path with a relative path as if the cd command is being executed.
-    """
-    if original_path[0] == '/':
-        seg_original_path = original_path.split('/')[1:-1]
-    else:
-        seg_original_path = original_path.split('/')[:-1]
-
-    seg_relative_path = relative_path.split('/')
-
-    # Modify the original directory to go one directory up for each .. element
-    for dir_token in list(seg_relative_path):
-        if dir_token == '..':
-            seg_original_path.pop(-1)
-            seg_relative_path.pop(0)
-        else:
-            break
-    # Append the remaining directories
-    return '/' + '/'.join(seg_original_path + seg_relative_path)
-
-
 def main():
     """Main function for lattice arc tagging."""
     parser = argparse.ArgumentParser(description='lattice pre-processing')
@@ -201,8 +170,9 @@ def main():
         type=float, default=0.5
     )
     parser.add_argument(
-        '-b', '--one-best', type=str, required=True,
-        help='Path to the one best transcription (*.mlf.det file) relative to the corresponding lattice (*.lat.gz) file.'
+        '-b', '--one-best', type=str,
+        default='/home/dawna/babel/BABEL_OP3_404/releaseB/exp-graphemic-ar527-v3/J2/decode-ibmseg-fcomb/scoring/sclite/dev/decode_rescore_tg_20.0_0.0_rescore_wlat_20.0_0.0_rescore_plat_20.0_0.0.mlf.det',
+        help='Path to the one best transcription (*.mlf.det file) for the lattice files given in file-list-dir.'
     )
     parser.add_argument(
         '-stm', '--stm-dir', type=str, required=True,
@@ -212,33 +182,24 @@ def main():
         '-d', '--dst-dir', type=str, required=True,
         help='The directory in which to save the output files'
     )
-    parser.add_argument(
-        '-p', '--mlf-name-prefix', type=str, default='dev_dev_',
-        help='The prefix attached to the MLF speaker files (*.mlf)'
-    )
     args = parser.parse_args()
-
     
     dst_dir = os.path.join(args.dst_dir, 'target_overlap_{}'.format(args.threshold))
     utils.mkdir(dst_dir)
+    baseline_dict = load_baseline(args.one_best)
 
     subset_list = ['train.txt', 'cv.txt', 'test.txt']
     for subset in subset_list:
         file_list = os.path.join(args.file_list_dir, subset)
 
     lattice_list = []
-    baseline_dict_list = []
     with open(os.path.abspath(file_list), 'r') as file_in:
-        for line in file_in:
-            path_to_lat = line.strip()
-            lattice_list.append(path_to_lat)
-            mlf_path = path_to_mlf(path_to_lat, args.one_best, args.mlf_name_prefix)
-            print('mlf_path: ' + mlf_path)
-            baseline_dict_list.append(load_baseline(mlf_path))
+        for path_to_lat in file_in:
+            lattice_list.append(path_to_lat.strip())
 
     with Pool(args.num_threads) as pool:
         pool.starmap(label, zip(lattice_list, repeat(args.stm_dir), repeat(dst_dir),
-                                baseline_dict_list, repeat(args.threshold)))
+                                repeat(baseline_dict), repeat(args.threshold)))
 
 if __name__ == '__main__':
     main()

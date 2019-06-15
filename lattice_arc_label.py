@@ -157,7 +157,9 @@ def path_to_mlf(original_path, relative_path, mlf_prefix):
         a given speaker.
     """
     mlf_dir = modify_path(original_path, relative_path)
-    speaker_name = original_path.split()[-1].split('_')[0]
+    speaker_call_name = original_path.split('/')[-1].split('_')[0]
+    speaker_name = '-'.join(speaker_call_name.pslit('-')[:2] + speaker_call_name.pslit('-')[-1])
+    print('speaker_name: ' + speaker_name)
     return os.path.join(mlf_dir, mlf_prefix + speaker_name + '.mlf')
 
 def modify_path(original_path, relative_path):
@@ -231,7 +233,7 @@ def main():
             path_to_lat = line.strip()
             lattice_list.append(path_to_lat)
             mlf_path = path_to_mlf(path_to_lat, args.one_best, args.mlf_name_prefix)
-            print(mlf_path)
+            print('mlf_path: ' + mlf_path)
             baseline_dict_list.append(load_baseline(mlf_path))
 
     with Pool(args.num_threads) as pool:

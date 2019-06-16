@@ -14,7 +14,7 @@ import utils
 
 def score(array, grammar_scale=20.0):
     """Get the combined score from the vector."""
-    assert len(array) == 4, "lattice feature dimension wrong"
+    # assert len(array) == 4, "lattice feature dimension wrong: it is {}, but should be 4".format(len(array))
     am_score = array[2]
     lm_score = array[3]
     return am_score / grammar_scale + lm_score

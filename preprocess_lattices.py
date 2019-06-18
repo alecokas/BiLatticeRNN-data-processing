@@ -159,7 +159,8 @@ def load_wordvec(path):
     wordvec = np.load(path).item()
     return wordvec
 
-def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding):
+def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
+                        processed_file_list_path=None):
     """Process a single lattice.
 
     Arguments:
@@ -202,8 +203,16 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding):
             np.savez(name, topo_order=topo_order, child_2_parent=child_2_parent,
                      parent_2_child=parent_2_child, edge_data=edge_data, mask_data=mask_data,
                      ignore=ignore)
+            if processed_file_list_path is not None:
+                append_path_to_txt(name, processed_file_list_path)
     except OSError as exception:
         LOGGER.info('%s\n' %lattice_path + str(exception))
+
+
+def append_path_to_txt(path_to_add, target_file):
+    with open(target_file, "a") as file:
+        file.write(path_to_add + '\n')
+
 
 def pad_subword(subword_edge_features):
     """ The subword data (graphemic / phonetic) can be of variable length. In order to store
@@ -242,6 +251,10 @@ def main():
         help='The directory containing the files with the lists of lattice absolute paths for each subset'
     )
     parser.add_argument(
+        '-p', '--processed-file-list-dir', type=str,
+        help='The directory in which to write the paths to the processed lattices (*.npz).'
+    )    
+    parser.add_argument(
         '-v', '--verbose',
         help='Set logging level: ERROR (default), WARNING (-v), INFO (-vv), DEBUG (-vvv)',
         action='count', default=0
@@ -264,9 +277,21 @@ def main():
     subword_embedding_path = os.path.join(args.embedding)
     wordvec_path = os.path.join(args.wordvec)
 
-    subset_list = ['train.txt', 'cv.txt', 'test.txt']
+    subset_list = ['train.lat.txt', 'cv.lat.txt', 'test.lat.txt']
+    processed_subset_list = []
 
     for subset in subset_list:
+        subset_name = subset.split('.')[0] + subset.split('.')[2]
+        preprocessed_list_file = os.path.join(args.processed_file_list_dir, subset_name)
+
+        try:
+            os.remove(preprocessed_list_file)
+        except OSError:
+            pass
+
+        processed_subset_list.append(preprocessed_list_file)
+
+    for i, subset in enumerate(subset_list):
         file_list = os.path.join(file_list_dir, subset)
         subword_embedding = load_wordvec(subword_embedding_path)
         wordvec = load_wordvec(wordvec_path)
@@ -278,7 +303,8 @@ def main():
 
         with Pool(args.num_threads) as pool:
             pool.starmap(process_one_lattice, zip(lattice_list, repeat(dst_dir),
-                                                repeat(wordvec), repeat(subword_embedding)))
+                                                repeat(wordvec), repeat(subword_embedding),
+                                                repeat(processed_subset_list[i])))
 
 if __name__ == '__main__':
     main()

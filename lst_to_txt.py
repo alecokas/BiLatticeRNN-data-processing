@@ -91,7 +91,7 @@ def save_txt_file(path_list, txt_file_name):
     except OSError:
         pass
     # Write to new file
-    with open(txt_file_name + '.txt', 'a+') as txt_file:
+    with open(txt_file_name + '.lat.txt', 'a+') as txt_file:
         for path in path_list:
             txt_file.write(path + '\n')
 

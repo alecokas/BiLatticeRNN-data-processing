@@ -281,7 +281,7 @@ def main():
     processed_subset_list = []
 
     for subset in subset_list:
-        subset_name = subset.split('.')[0] + subset.split('.')[2]
+        subset_name = subset.split('.')[0] + '.' + subset.split('.')[2]
         preprocessed_list_file = os.path.join(args.processed_file_list_dir, subset_name)
 
         try:

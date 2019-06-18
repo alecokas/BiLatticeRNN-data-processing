@@ -204,7 +204,7 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
                      parent_2_child=parent_2_child, edge_data=edge_data, mask_data=mask_data,
                      ignore=ignore)
             if processed_file_list_path is not None:
-                append_path_to_txt(name, processed_file_list_path)
+                append_path_to_txt(os.path.abspath(name), processed_file_list_path)
     except OSError as exception:
         LOGGER.info('%s\n' %lattice_path + str(exception))
 

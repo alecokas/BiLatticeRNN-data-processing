@@ -67,7 +67,7 @@ def main():
         help='Full path to a text file with the cross validation set lattices'
     )
     parser.add_argument(
-        '-d', '--destination-file', type=str, required=True, 
+        '-d', '--dest-file', type=str, required=True, 
         help='Full path name of the file in which to save the mean and variance stats'
     )
     args = parser.parse_args()

@@ -194,14 +194,16 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
 
                 edge_data[i] = np.append(word_edge_data, padded_subword_data)
 
-                ones = len(word_edge_data) * [1]
-                mask_data[i] = np.append(ones, subword_mask)
+                false_list = len(word_edge_data) * [False]
+                mask_data[i] = np.append(false_list, subword_mask)
 
                 if word in ['<s>', '</s>', '!NULL', '<hes>']:
                     ignore.append(i)
+
+            masked_edge_data = np.ma.array(edge_data, mask=mask_data)
             # save multiple variables into one .npz file
             np.savez(name, topo_order=topo_order, child_2_parent=child_2_parent,
-                     parent_2_child=parent_2_child, edge_data=edge_data, mask_data=mask_data,
+                     parent_2_child=parent_2_child, edge_data=masked_edge_data,
                      ignore=ignore)
             if processed_file_list_path is not None:
                 append_path_to_txt(os.path.abspath(name), processed_file_list_path)
@@ -227,7 +229,7 @@ def pad_subword(subword_edge_features):
     padded_subword_data = []
     for edge_chunk in subword_edge_data:
         padded_subword_data = padded_subword_data + edge_chunk + pads_per_chunk * [0]
-        mask = mask + len(edge_chunk) * [1] + pads_per_chunk * [0]
+        mask = mask + len(edge_chunk) * [False] + pads_per_chunk * [True]
     return padded_subword_data, mask
 
 def main():

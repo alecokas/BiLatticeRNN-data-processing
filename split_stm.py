@@ -28,7 +28,8 @@ def get_segments(file_name):
                         num_lines.append(count)
                         count = 1
                 else:
-                    num_lines.append(count)
+                    # num_lines.append(count)
+                    count += 1
         last_num_lines_entry = total_num_lines - sum(num_lines)
         num_lines.append(last_num_lines_entry)
     assert len(segments) == len(num_lines), "%i != %i" %(len(segments), len(num_lines))
@@ -48,9 +49,9 @@ def split_stm(file_name, segments, num_lines, dst_dir):
                 counter += 1
                 if line[0] != ';;': 
                     assert line[0] == segment, "Mismatch between {} and {}".format(line[0], segment)
-                    time.append(float(line[2]))
-                    duration.append(float(line[3]))
-                    word.append(line[4])
+                    time.append(float(line[3]))
+                    duration.append(float(line[4]) - float(line[3]))
+                    word.append(line[5])
             np.savez(dst_file, time=time, duration=duration, word=word)
 
 def num_lines_in_file(file_name):

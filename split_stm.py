@@ -47,7 +47,7 @@ def split_stm(file_name, segments, num_lines, dst_dir):
             for _ in range(num_line):
                 line = next(file_in).split()
                 counter += 1
-                if line[0] != ';;': 
+                if not line[0].startswith(';;') and len(line) > 5:
                     assert line[0] == segment, "Mismatch between {} and {}".format(line[0], segment)
                     time.append(float(line[3]))
                     duration.append(float(line[4]) - float(line[3]))

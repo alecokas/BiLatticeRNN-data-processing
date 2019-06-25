@@ -151,6 +151,8 @@ def label(lattice_path, stm_dir, dst_dir, baseline_dict, threshold=0.5):
             print("ERROR: reference and one-best do not match")
             print(name, indices, ref)
             print(seq_1, seq_2)
+    else:
+        print('Warning: {} already exists - skipping'.format(target_name))
 
 def main():
     """Main function for lattice arc tagging."""

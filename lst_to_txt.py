@@ -48,7 +48,7 @@ def compile_lattice_list(destination='info/abs-dataset-paths',
         subset_dir = os.path.join(base_directory, subset)
         speaker_dirs = next(os.walk(os.path.join(base_directory, subset)))[1]
         for speaker_dir in speaker_dirs:
-            raw_lattice_dir = os.path.join(subset_dir, speaker_dir, 'decode/rescore/tg_20.0_0.0/rescore/wlat_20.0_0.0/rescore/plat_20.0_0.0/lattices')
+            raw_lattice_dir = os.path.join(subset_dir, speaker_dir, 'decode/rescore/tg_lat_post_prec_20.0_0.0/lattices/')
             raw_lattice_list = next(os.walk(raw_lattice_dir))[2]
             for lattice_name in raw_lattice_list:
                 abs_path = os.path.join(raw_lattice_dir, lattice_name)
@@ -98,10 +98,6 @@ def save_txt_file(path_list, txt_file_name):
 
 def main(args):
     """ Primary entry point for the script. """
-    # unzip(
-    #     input_dir=args.input_dir,
-    #     target_directory=args.output_dir
-    # )
     reference_dict = read_reference_lst_files()
     path_list = compile_lattice_list()
     save_train_val_test_split(reference_dict, path_list, 'info/abs-dataset-paths/')

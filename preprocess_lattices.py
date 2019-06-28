@@ -191,6 +191,7 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
         subword_embedding {dict} -- subword embeddings
     """
     name = lattice_path.split('/')[-1].split('.')[0] + '.npz'
+    print('Processing {}'.format(name))
     try:
         LOGGER.info(name)
         name = os.path.join(dst_dir, name)

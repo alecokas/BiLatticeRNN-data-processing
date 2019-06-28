@@ -37,6 +37,7 @@ def read_lattice(lattice_path, subword_embedding=None):
             mapping from childID to parentID
         parent_2_child {dict} -- {parentID: {childID: edgeID, ...}, ...},
             mapping from parentID to childID
+        subword_data {list of dicts} -- [dict1, dict2, dict3, ...] where dictX = {embeddings: XXXX, durations: XXXX}
     """
     utils.check_file(lattice_path)
     nodes = []
@@ -119,7 +120,7 @@ def get_grapheme_info(grapheme_info, subword_embedding):
             token_list.append([0])
         else:
             token_list.append(subword_embedding[token].tolist())
-    return token_list, token_durs
+    return np.asarray(token_list), np.asarray(token_durs)
 
 
 def strip_phone(phone_info, phone_context_width, incl_posn_info):

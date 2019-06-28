@@ -16,7 +16,7 @@ import utils
 EMBEDDING_LENGTH = 50
 MAX_ARC_INFO = 10
 SUBWORD_PROPERTIES = 2
-HEADER_LINE_COUNT = 7
+HEADER_LINE_COUNT = 8
 
 
 def read_lattice(lattice_path, subword_embedding=None):
@@ -113,7 +113,7 @@ def get_grapheme_info(grapheme_info, subword_embedding):
     token_list = []
     subword_list = grapheme_info.split(':')[1:-1]
     for subword_info in subword_list:
-        subword, subword_dur = subword_info.split(',')
+        subword, subword_dur = subword_info.split(',')[:2]
         token_durs.append(subword_dur)
         token = strip_phone(subword, 1, False)
         if subword_embedding is None:
@@ -211,7 +211,7 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
 
                 # padded_subword_data, subword_mask = pad_subword(edge[4])
                 edge_data[i] = np.concatenate(
-                    (wordvec[word], np.array([time, edge[2], edge[3]])), axis=0)
+                    (wordvec[word], np.array([time, edge[2], edge[3], edge[4]])), axis=0)
 
                 # edge_data[i] = np.append(word_edge_data, padded_subword_data)
 

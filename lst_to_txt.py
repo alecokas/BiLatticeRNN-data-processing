@@ -6,7 +6,6 @@ import sys
 
 
 def parse_arguments(args_to_parse):
-    return None
     """ Parse the command line arguments.
 
         Arguments:
@@ -16,12 +15,20 @@ def parse_arguments(args_to_parse):
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument(
-        '-i', '--input-dir', type=str,
-        help="Path to the directory containing phone marked lattices."
+        '-b', '--base-lat-dir', type=str,
+        help="Path to the base lattice directory."
     )
     parser.add_argument(
-        '-o', '--output-dir', type=str,
-        help="Output directory in which to save the uncompressed lattices and the extracted data."
+        '-e', '--extension-dir', type=str,
+        help="Extension directory post-dataset directory"
+    )
+    parser.add_argument(
+        '-o', '--output-dir', type=str, default='info/abs-dataset-paths',
+        help="Output directory for the processed absolute path files (.txt)"
+    )  
+    parser.add_argument(
+        '-i', '--input-dir', type=str, default='info/reference-lists',
+        help="The directory with the train, cv, and test files which indicate the dataset split (.lst)"
     )
 
     args = parser.parse_args(args_to_parse)
@@ -40,15 +47,15 @@ def unzip(input_dir, target_directory):
             else:
                 raise Exception('The target file must have the .gz extension.')
 
-def compile_lattice_list(destination='info/abs-dataset-paths',
-                         base_directory='/home/dawna/babel/BABEL_OP3_404/releaseB/exp-graphemic-ar527-v3/J2/decode-ibmseg-fcomb/test/'):
+def compile_lattice_list(base_directory='/home/dawna/babel/BABEL_OP3_404/releaseB/exp-graphemic-ar527-v3/J2/decode-ibmseg-fcomb/test/',
+                         ext_dir='decode/rescore/tg_20.0_0.0/rescore/wlat_20.0_0.0/rescore/plat_20.0_0.0/rescore/tg_lat_post_prec_20.0_0.0/lattices/'):
     subsets = ['dev', 'eval']
     path_list = []
     for subset in subsets:
         subset_dir = os.path.join(base_directory, subset)
         speaker_dirs = next(os.walk(os.path.join(base_directory, subset)))[1]
         for speaker_dir in speaker_dirs:
-            raw_lattice_dir = os.path.join(subset_dir, speaker_dir, 'decode/rescore/tg_20.0_0.0/rescore/wlat_20.0_0.0/rescore/plat_20.0_0.0/rescore/tg_lat_post_prec_20.0_0.0/lattices/')
+            raw_lattice_dir = os.path.join(subset_dir, speaker_dir, ext_dir)
             raw_lattice_list = next(os.walk(raw_lattice_dir))[2]
             for lattice_name in raw_lattice_list:
                 abs_path = os.path.join(raw_lattice_dir, lattice_name)
@@ -98,10 +105,18 @@ def save_txt_file(path_list, txt_file_name):
 
 def main(args):
     """ Primary entry point for the script. """
-    reference_dict = read_reference_lst_files()
-    path_list = compile_lattice_list()
-    save_train_val_test_split(reference_dict, path_list, 'info/abs-dataset-paths/')
-
+    reference_dict = read_reference_lst_files(
+        dataset_split_dir=args.input_dir
+    )
+    path_list = compile_lattice_list(
+        base_directory=args.base_lat_dir,
+        ext_dir=args.extension_dir
+    )
+    save_train_val_test_split(
+        reference_dict=reference_dict,
+        path_list=path_list,
+        target_destination=args.output_dir,
+    )
 
 
 if __name__ == '__main__':

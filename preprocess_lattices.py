@@ -72,6 +72,9 @@ def read_lattice(lattice_path, subword_embedding=None):
             am_score = float(line[3].split('=')[1])
             lm_score = float(line[4].split('=')[1])
 
+            # Set grapheme_dict to None so that if there is no grapheme information, this can
+            # be used downstream as a check
+            grapheme_dict = None
             if line[5].split('=')[0] == 'r':
                 # Remove the prnounciation information if it is present
                 del line[5]

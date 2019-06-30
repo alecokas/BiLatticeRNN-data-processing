@@ -1,4 +1,6 @@
-"""Preprocess lattices."""
+""" Preprocess lattices from the *.lat.gz format into the processed *.npz format.
+    At the same time, produce the file list with paths to the processed files.
+"""
 #!/usr/bin/env python3
 
 import os
@@ -275,11 +277,11 @@ def main():
     )
     parser.add_argument(
         '-f', '--file-list-dir', type=str,
-        help='The directory containing the files with the lists of lattice absolute paths for each subset'
+        help='The directory containing the files with the lists of lattice absolute paths for each subset (*.lat.txt)'
     )
     parser.add_argument(
         '-p', '--processed-file-list-dir', type=str,
-        help='The directory in which to write the paths to the processed lattices (*.npz).'
+        help='The directory in which to save files with paths to the processed lattices (*.txt).'
     )    
     parser.add_argument(
         '-v', '--verbose',

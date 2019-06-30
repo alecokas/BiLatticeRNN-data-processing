@@ -1,3 +1,8 @@
+""" Converts a *.lst file which contains the speaker call ID for each lattice to include in each of the
+    subsets (training, cross-validation, testing) into a *.lat.txt file with the absolute paths to
+    the lattices.
+"""
+
 import argparse
 import os
 import re

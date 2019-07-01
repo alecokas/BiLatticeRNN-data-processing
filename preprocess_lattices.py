@@ -203,11 +203,10 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
             nodes, edges, dependency, child_2_parent, parent_2_child, grapheme_embedding_list, grapheme_dur_list \
                 = read_lattice(lattice_path, subword_embedding)
             topo_order = toposort_flatten(dependency)
-            # posterior = arc_posterior(lattice_path)
+
             # for each edge, the information contains
-            # [EMBEDDING_LENGTH, duration(1), AM(1), LM(1), arc_posterior(1) or grapheme_info(MAX_ARC_INFO * 2)]
+            # [EMBEDDING_LENGTH, duration(1), AM(1), LM(1), arc_posterior(1)]
             edge_data = np.empty((len(edges), EMBEDDING_LENGTH + 1 + 1 + 1 + 1))
-            # mask_data = np.empty((len(edges), EMBEDDING_LENGTH + 1 + 1 + 1))
             ignore = []
             for i, edge in enumerate(edges):
                 start_node = edge[0]
@@ -215,19 +214,12 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
                 time = nodes[end_node][0] - nodes[start_node][0]
                 word = nodes[end_node][1]
 
-                # padded_subword_data, subword_mask = pad_subword(edge[4])
                 edge_data[i] = np.concatenate(
                     (wordvec[word], np.array([time, edge[2], edge[3], edge[4]])), axis=0)
-
-                # edge_data[i] = np.append(word_edge_data, padded_subword_data)
-
-                # false_list = len(word_edge_data) * [False]
-                # mask_data[i] = np.append(false_list, subword_mask)
 
                 if word in ['<s>', '</s>', '!NULL', '<hes>']:
                     ignore.append(i)
 
-            # masked_edge_data = np.ma.array(edge_data, mask=mask_data)
             # save multiple variables into one .npz file
             np.savez(name, topo_order=topo_order, child_2_parent=child_2_parent,
                      parent_2_child=parent_2_child, edge_data=edge_data,

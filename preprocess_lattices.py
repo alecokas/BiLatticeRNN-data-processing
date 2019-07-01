@@ -44,7 +44,8 @@ def read_lattice(lattice_path, subword_embedding=None):
     utils.check_file(lattice_path)
     nodes = []
     edges = []
-    subword_data = []
+    grapheme_embedding_list = []
+    grapheme_dur_list = []
     dependency = {}
     child_2_parent = {}
     parent_2_child = {}
@@ -76,17 +77,13 @@ def read_lattice(lattice_path, subword_embedding=None):
 
             # Set grapheme_dict to None so that if there is no grapheme information, this can
             # be used downstream as a check
-            grapheme_dict = None
+            # grapheme_dict = None
             if line[5].split('=')[0] == 'r':
                 # Remove the prnounciation information if it is present
                 del line[5]
             if line[5].split('=')[0] == 'd':
                 # Do graphemic stuff
-                token_list, dur_list = get_grapheme_info(line[5].split('=')[1], subword_embedding)
-                grapheme_dict = {
-                    'embeddings': token_list,
-                    'durations': dur_list
-                }
+                grapheme_embedding_array, grapheme_dur_array = get_grapheme_info(line[5].split('=')[1], subword_embedding)
                 post_idx = 6
             else:
                 post_idx = 5
@@ -97,7 +94,9 @@ def read_lattice(lattice_path, subword_embedding=None):
                 raise Exception('This lattice ({}) has an unrecognised arc parameter sequence'.format(lattice_path))
 
             edges.append([parent, child, am_score, lm_score, post])
-            subword_data.append(grapheme_dict)
+            grapheme_embedding_list.append(grapheme_embedding_array)
+            grapheme_dur_list.append(grapheme_dur_array)
+
             if child not in dependency:
                 dependency[child] = {parent}
                 child_2_parent[child] = {parent: edge_id}
@@ -108,7 +107,7 @@ def read_lattice(lattice_path, subword_embedding=None):
                 parent_2_child[parent] = {child: edge_id}
             else:
                 parent_2_child[parent][child] = edge_id
-    return nodes, edges, dependency, child_2_parent, parent_2_child, subword_data
+    return nodes, edges, dependency, child_2_parent, parent_2_child, grapheme_embedding_list, grapheme_dur_list
 
 def get_grapheme_info(grapheme_info, subword_embedding):
     """ Separate all graphemes and durations into two separate lists.
@@ -201,7 +200,8 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
         LOGGER.info(name)
         name = os.path.join(dst_dir, name)
         if not os.path.isfile(name):
-            nodes, edges, dependency, child_2_parent, parent_2_child, subword_data = read_lattice(lattice_path, subword_embedding)
+            nodes, edges, dependency, child_2_parent, parent_2_child, grapheme_embedding_list, grapheme_dur_list \
+                = read_lattice(lattice_path, subword_embedding)
             topo_order = toposort_flatten(dependency)
             # posterior = arc_posterior(lattice_path)
             # for each edge, the information contains
@@ -231,7 +231,8 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
             # save multiple variables into one .npz file
             np.savez(name, topo_order=topo_order, child_2_parent=child_2_parent,
                      parent_2_child=parent_2_child, edge_data=edge_data,
-                     ignore=ignore, subword_data=subword_data)
+                     ignore=ignore, grapheme_embeddings=grapheme_embedding_list,
+                     grapheme_durations=grapheme_dur_list)
             if processed_file_list_path is not None:
                 append_path_to_txt(os.path.abspath(name), processed_file_list_path)
     except OSError as exception:

@@ -28,6 +28,11 @@ def generate_statistics(edge_count_list):
     return stats_dict
 
 
+def save_results(results_dict, target_file):
+    with open(target_file + '.pkl', 'wb') as tgt_file:
+        tgt_file.write(results_dict)
+
+
 def main(args):
     """ Primary entry point for the script. """
     dataset_dir = args.target_dir
@@ -36,6 +41,7 @@ def main(args):
 
     edge_count_list = read_lattices_edges(dataset_dir)
     stats_dict = generate_statistics(edge_count_list)
+    save_results(stats_dict, args.output_stats)
     print(stats_dict)
 
 
@@ -52,7 +58,10 @@ def parse_arguments(args_to_parse):
         '-i', '--target-dir', type=str,
         help='Location of the dataset with the uncompressed lattice files (*.npz)'
     )
-
+    parser.add_argument(
+        '-o', '--output-stats', type=str,
+        help='The file to save the exploration statistics.'
+    )
     args = parser.parse_args(args_to_parse)
     return args
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Compute the statistics of the dataset.
-For speed and accuracy on large dataset, the algorithm follows
-https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
+""" Compute the statistics of the dataset (train and CV set) and save it in a file named stats.npz.
+    For speed and accuracy on large dataset, the algorithm follows
+    https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
 """
 
 import os
@@ -67,8 +67,8 @@ def main():
         help='Full path to a text file with the cross validation set lattices'
     )
     parser.add_argument(
-        '-d', '--dest-file', type=str, required=True, 
-        help='Full path name of the file in which to save the mean and variance stats'
+        '-d', '--dest-dir', type=str, required=True, 
+        help='Full path to the directory in which to save the mean and variance stats.'
     )
     args = parser.parse_args()
 
@@ -77,7 +77,8 @@ def main():
     mask = range(0, 50)
     mean[mask] = 0.0
     variance[mask] = 1.0
-    np.savez(args.dest_file, mean=np.reshape(mean, (1, -1)), std=np.reshape(np.sqrt(variance), (1, -1)))
+    stats_file = os.path.join(args.dest_dir, 'stats.npz')
+    np.savez(stats_file, mean=np.reshape(mean, (1, -1)), std=np.reshape(np.sqrt(variance), (1, -1)))
 
 if __name__ == '__main__':
     main()

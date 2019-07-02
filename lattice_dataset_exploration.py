@@ -35,7 +35,6 @@ def generate_statistics(edge_count_list):
 
 def save_results(results_dict, target_file):
     with open(target_file + '.pickle', 'wb') as tgt_file:
-        tgt_file.write(results_dict)
         pickle.dump(results_dict, tgt_file, protocol=pickle.HIGHEST_PROTOCOL)
 
 
@@ -112,11 +111,11 @@ def parse_arguments(args_to_parse):
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument(
-        '-i', '--target-dir', type=str,
+        '-i', '--target-dir', type=str, default='',
         help='Location of the dataset with the uncompressed lattice files (*.npz)'
     )
     parser.add_argument(
-        '-o', '--output-stats', type=str,
+        '-o', '--output-stats', type=str, required=True,
         help='The file to save the exploration statistics.'
     )
     parser.add_argument(
@@ -124,11 +123,11 @@ def parse_arguments(args_to_parse):
         help='Flag to indicate that the operation is operating on processed lattices'
     )
     parser.add_argument(
-        '-b', '--base-lat-dir', type=str,
+        '-b', '--base-lat-dir', type=str, default='',
         help="Path to the base lattice directory which contains the dev and eval splits expected with BABEL."
     )
     parser.add_argument(
-        '-e', '--extension-dir', type=str,
+        '-e', '--extension-dir', type=str, default='',
         help="Extension directory post-dataset directory"
     )
     args = parser.parse_args(args_to_parse)

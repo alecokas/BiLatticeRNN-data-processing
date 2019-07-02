@@ -1,6 +1,7 @@
 import argparse
-import os
 import numpy as np
+import os
+import pickle
 import sys
 
 
@@ -29,9 +30,9 @@ def generate_statistics(edge_count_list):
 
 
 def save_results(results_dict, target_file):
-    with open(target_file + '.pkl', 'wb') as tgt_file:
+    with open(target_file + '.pickle', 'wb') as tgt_file:
         tgt_file.write(results_dict)
-
+        pickle.dump(results_dict, tgt_file, protocol=pickle.HIGHEST_PROTOCOL)
 
 def main(args):
     """ Primary entry point for the script. """

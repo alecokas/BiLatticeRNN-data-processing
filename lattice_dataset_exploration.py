@@ -45,9 +45,6 @@ def processed_lattice_exploration(args):
         raise Exception('{} is not a valid directory'.format(dataset_dir))
 
     return read_processed_lattices_edges(dataset_dir)
-    # stats_dict = generate_statistics(edge_count_list)
-    # save_results(stats_dict, args.output_stats)
-    # print(stats_dict)
 
 
 def read_num_edges(lattice_path):
@@ -86,7 +83,6 @@ def raw_lattice_exploration(args):
     base_dir = args.base_lat_dir
     extention_dir = args.extension_dir
     return read_htk_lattice_edges(base_dir, extention_dir)
-    # generate_statistics(edge_count_list)
 
 
 def main(args):

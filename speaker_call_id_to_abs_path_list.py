@@ -10,35 +10,6 @@ from subprocess import call
 import sys
 
 
-def parse_arguments(args_to_parse):
-    """ Parse the command line arguments.
-
-        Arguments:
-            args_to_parse: CLI arguments to parse
-    """
-    description = "Extract information from phone marked lattices"
-    parser = argparse.ArgumentParser(description=description)
-
-    parser.add_argument(
-        '-b', '--base-lat-dir', type=str,
-        help="Path to the base lattice directory."
-    )
-    parser.add_argument(
-        '-e', '--extension-dir', type=str,
-        help="Extension directory post-dataset directory"
-    )
-    parser.add_argument(
-        '-o', '--output-dir', type=str, default='info/abs-dataset-paths',
-        help="Output directory for the processed absolute path files (.txt)"
-    )  
-    parser.add_argument(
-        '-i', '--input-dir', type=str, default='info/reference-lists',
-        help="The directory with the train, cv, and test files which indicate the dataset split (.lst)"
-    )
-
-    args = parser.parse_args(args_to_parse)
-    return args
-
 def unzip(input_dir, target_directory):
     for root, _, filenames in os.walk(input_dir):
         for name in filenames:
@@ -53,7 +24,7 @@ def unzip(input_dir, target_directory):
                 raise Exception('The target file must have the .gz extension.')
 
 def compile_lattice_list(base_directory='/home/dawna/babel/BABEL_OP3_404/releaseB/exp-graphemic-ar527-v3/J2/decode-ibmseg-fcomb/test/',
-                         ext_dir='decode/rescore/tg_20.0_0.0/rescore/wlat_20.0_0.0/rescore/plat_20.0_0.0/rescore/tg_lat_post_prec_20.0_0.0/lattices/'):
+                         ext_dir='decode/rescore/tg_20.0_0.0/rescore/wlat_20.0_0.0/rescore/plat_20.0_0.0/rescore/tg_lat_post_prec_t500_20.0_0.0/lattices/'):
     subsets = ['dev', 'eval']
     path_list = []
     for subset in subsets:
@@ -83,7 +54,8 @@ def read_reference_lst_files(dataset_split_dir='info/reference-lists'):
     return dataset_dict
     
 def save_train_val_test_split(reference_dict, path_list, target_destination):
-    """
+    """ Save the train, cv, test set splits by producing a *.lat.txt file for each subset with
+        the absolute paths to the HTK lattices.
     """
     lattice_name_list = []
 
@@ -97,6 +69,7 @@ def save_train_val_test_split(reference_dict, path_list, target_destination):
         
 
 def save_txt_file(path_list, txt_file_name):
+    """ Save the list of absolute HTK lattice paths to a text file with the extension .lat.txt """
     # Remove file if it exists
     try:
         os.remove(txt_file_name)
@@ -106,6 +79,36 @@ def save_txt_file(path_list, txt_file_name):
     with open(txt_file_name + '.lat.txt', 'a+') as txt_file:
         for path in path_list:
             txt_file.write(path + '\n')
+
+
+def parse_arguments(args_to_parse):
+    """ Parse the command line arguments.
+
+        Arguments:
+            args_to_parse: CLI arguments to parse
+    """
+    description = "Extract information from phone marked lattices"
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument(
+        '-b', '--base-lat-dir', type=str,
+        help="Path to the base lattice directory."
+    )
+    parser.add_argument(
+        '-e', '--extension-dir', type=str,
+        help="Extension directory post-dataset directory"
+    )
+    parser.add_argument(
+        '-o', '--output-dir', type=str, default='info/abs-dataset-paths',
+        help="Output directory for the processed absolute path files (.txt)"
+    )
+    parser.add_argument(
+        '-i', '--input-dir', type=str, default='info/reference-lists',
+        help="The directory with the train, cv, and test files which indicate the dataset split (.lst)"
+    )
+
+    args = parser.parse_args(args_to_parse)
+    return args
 
 
 def main(args):

@@ -3,21 +3,19 @@
 """
 #!/usr/bin/env python3
 
-import os
-import sys
-import gzip
 import argparse
+import gzip
 from itertools import repeat
 from multiprocessing import Pool
 import numpy as np
+import numpy.ma as ma
+import os
 import re
+import sys
 from toposort import toposort_flatten
-
 import utils
 
 EMBEDDING_LENGTH = 50
-MAX_ARC_INFO = 10
-SUBWORD_PROPERTIES = 2
 HEADER_LINE_COUNT = 8
 # Grapheme embedding (4), grapheme duration (1)
 LEN_GRAPHEME_FEATURES = 5
@@ -107,7 +105,18 @@ def read_lattice(lattice_path, subword_embedding=None):
                 parent_2_child[parent] = {child: edge_id}
             else:
                 parent_2_child[parent][child] = edge_id
-    return nodes, edges, dependency, child_2_parent, parent_2_child, grapheme_data
+
+    # go through the array now and put it in a big masked array so it is just ine simple numpy array (I, J, F)
+    max_grapheme_seq_length = longest_grapheme_sequence(grapheme_data)
+    padded_grapheme_data = np.empty((len(grapheme_data), max_grapheme_seq_length, LEN_GRAPHEME_FEATURES))
+    mask = np.empty_like(padded_grapheme_data, dtype=bool)
+
+    for arc_num, grapheme_seq in enumerate(grapheme_data):
+        padded_grapheme_data[arc_num, :, :], mask[arc_num, :, :] = pad_subword_sequence(grapheme_seq, max_grapheme_seq_length)
+
+    masked_grapheme_data = ma.masked_array(padded_grapheme_data, mask=mask, fill_value=-999999)
+
+    return nodes, edges, dependency, child_2_parent, parent_2_child, masked_grapheme_data
 
 def get_grapheme_info(grapheme_info, subword_embedding):
     """ Extract grapheme information and store it in an array with the following form:
@@ -166,6 +175,37 @@ def remove_location_indicator(phone_with_location):
         return ' '.join(clean_phone_list)
     else:
         return phone_with_location.split('^')[0]
+
+def longest_grapheme_sequence(grapheme_list):
+    max_length_seq = -1
+    for arc in grapheme_list:
+        seq_length = arc.shape[0]
+        if seq_length > max_length_seq:
+            max_length_seq = seq_length
+    if max_length_seq == -1:
+        raise Exception('max_length never updated')
+    print('Max length: {}'.format(max_length_seq))
+    return max_length_seq
+
+
+def pad_subword_sequence(subword_seq, max_seq_length):
+    """ The subword sequence (graphemic / phonetic) can be of variable length. In order to store
+        this data in a numpy array, one pads and masks the subword dimension to the max sequence
+        length.
+
+        subword_seq: numpy array with dimensions (graphemes, features)
+        max_seq_length: The length of the maximum subword sequence
+    """
+    pad_count = max_seq_length - subword_seq.shape[0]
+    zero_pads = np.zeros((pad_count, LEN_GRAPHEME_FEATURES))
+    padded_subword_seq = np.concatenate((subword_seq, zero_pads), axis=0)
+
+    valid_array = np.ones_like(zero_pads, dtype=bool)
+    invalid_array = np.zeros_like(subword_seq, dtype=bool)
+    mask = np.concatenate((valid_array, invalid_array), axs=0)
+    return padded_subword_seq, mask
+    # return ma.masked_array(padded_subword_seq, mask=mask, fill_value=-999999)
+
 
 def chunks(l, n):
     """Yield successive n-sized chunks from list l."""
@@ -237,22 +277,6 @@ def append_path_to_txt(path_to_add, target_file):
     with open(target_file, "a") as file:
         file.write(path_to_add + '\n')
 
-
-def pad_subword(subword_edge_features):
-    """ The subword data (graphemic / phonetic) can be of variable length. In order to store
-        this data in a numpy array, one assumes a maximum subword length and pad all shorter
-        subwords to that length.
-    """
-    mask = []
-    total_pad_count = MAX_ARC_INFO * SUBWORD_PROPERTIES - len(subword_edge_features)
-    pads_per_chunk = int(total_pad_count / SUBWORD_PROPERTIES)
-    subword_edge_data = list(chunks(subword_edge_features, SUBWORD_PROPERTIES))
-
-    padded_subword_data = []
-    for edge_chunk in subword_edge_data:
-        padded_subword_data = padded_subword_data + edge_chunk + pads_per_chunk * [0]
-        mask = mask + len(edge_chunk) * [False] + pads_per_chunk * [True]
-    return padded_subword_data, mask
 
 def main():
     """Main function for lattice preprocessing."""

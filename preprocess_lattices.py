@@ -85,6 +85,7 @@ def read_lattice(lattice_path, subword_embedding=None):
             if line[5].split('=')[0] == 'd':
                 # Extract a grapheme feature vector of dimensions: (num_graphemes, num_features)
                 grapheme_feature_array = get_grapheme_info(line[5].split('=')[1], subword_embedding)
+                grapheme_data.append(grapheme_feature_array)
                 post_idx = 6
             else:
                 post_idx = 5
@@ -95,7 +96,6 @@ def read_lattice(lattice_path, subword_embedding=None):
                 raise Exception('This lattice ({}) has an unrecognised arc parameter sequence'.format(lattice_path))
 
             edges.append([parent, child, am_score, lm_score, post])
-            grapheme_data.append(grapheme_feature_array)
 
             if child not in dependency:
                 dependency[child] = {parent}
@@ -107,6 +107,7 @@ def read_lattice(lattice_path, subword_embedding=None):
                 parent_2_child[parent] = {child: edge_id}
             else:
                 parent_2_child[parent][child] = edge_id
+
     return nodes, edges, dependency, child_2_parent, parent_2_child, grapheme_data
 
 def get_grapheme_info(grapheme_info, subword_embedding):

@@ -19,6 +19,8 @@ EMBEDDING_LENGTH = 50
 MAX_ARC_INFO = 10
 SUBWORD_PROPERTIES = 2
 HEADER_LINE_COUNT = 8
+# Grapheme embedding (4), grapheme duration (1)
+LEN_GRAPHEME_FEATURES = 5
 
 
 def read_lattice(lattice_path, subword_embedding=None):
@@ -109,22 +111,22 @@ def read_lattice(lattice_path, subword_embedding=None):
 
 def get_grapheme_info(grapheme_info, subword_embedding):
     """ Extract grapheme information and store it in an array with the following form:
-        (emb-0-0, emb-0-1, emb-0-2, emb-0-3, dur-0)
+        ((emb-0-0, emb-0-1, emb-0-2, emb-0-3, dur-0)
             .       .         .        .       .
             .       .         .        .       .
             .       .         .        .       .
-        (emb-J-0, emb-J-1, emb-J-2, emb-J-3, dur-J)
+        (emb-J-0, emb-J-1, emb-J-2, emb-J-3, dur-J))
     """
-    grapheme_feature_list = []
     subword_list = grapheme_info.split(':')[1:-1]
-    for subword_info in subword_list:
+    grapheme_feature_list = np.empty((len(subword_list), LEN_GRAPHEME_FEATURES))
+    for i, subword_info in enumerate(subword_list):
         subword, subword_dur = subword_info.split(',')[:2]
         token = strip_phone(subword, 1, False)
         if subword_embedding is None:
             raise Exception('No subword embedding!')
         else:
-            grapheme_feature_list.append(np.append(subword_embedding[token], subword_dur))
-    return np.asarray(grapheme_feature_list)
+            grapheme_feature_list[i, :] = np.append(subword_embedding[token], subword_dur)
+    return grapheme_feature_list
 
 
 def strip_phone(phone_info, phone_context_width, incl_posn_info):

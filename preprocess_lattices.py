@@ -185,7 +185,7 @@ def longest_grapheme_sequence(grapheme_list):
             max_length_seq = seq_length
     if max_length_seq == -1:
         raise Exception('max_length never updated')
-    print('Max length: {}'.format(max_length_seq))
+    # print('Max length: {}'.format(max_length_seq))
     return max_length_seq
 
 
@@ -203,7 +203,7 @@ def pad_subword_sequence(subword_seq, max_seq_length):
 
     valid_array = np.ones_like(zero_pads, dtype=bool)
     invalid_array = np.zeros_like(subword_seq, dtype=bool)
-    mask = np.concatenate((valid_array, invalid_array), axs=0)
+    mask = np.concatenate((valid_array, invalid_array), axis=0)
     return padded_subword_seq, mask
     # return ma.masked_array(padded_subword_seq, mask=mask, fill_value=-999999)
 

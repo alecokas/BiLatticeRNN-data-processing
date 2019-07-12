@@ -144,13 +144,14 @@ def label(lattice_path, stm_dir, dst_dir, baseline_dict, threshold=0.5):
             # assert seq_1 == seq_2
             np.savez(target_name, target=target, indices=indices, ref=ref)
         except IOError:
-            print("ERROR: file does not exist: %s" %stm_file)
+            raise Exception("ERROR: file does not exist: %s" %stm_file)
         except KeyError:
-            print("ERROR: baseline does not contain this lattice %s" %name)
+            raise Exception("ERROR: baseline does not contain this lattice %s" %name)
         except AssertionError:
-            print("ERROR: reference and one-best do not match")
             print(name, indices, ref)
             print(seq_1, seq_2)
+            raise Exception("ERROR: reference and one-best do not match")
+
     else:
         print('Warning: {} already exists - skipping'.format(target_name))
 

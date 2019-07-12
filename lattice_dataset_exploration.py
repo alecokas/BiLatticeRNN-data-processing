@@ -85,6 +85,34 @@ def raw_lattice_exploration(args):
     return read_htk_lattice_edges(base_dir, extention_dir)
 
 
+def target_counts(lattice_path):
+    lattice = np.load(lattice_path)
+    targets = lattice['target']
+    assert targets.ndim == 1
+    num_ones = np.sum(targets)
+    num_zeros = targets.shape[0] - num_ones
+    return num_zeros, num_ones
+
+
+def dataset_balance(dataset_dir):
+    """ For each lattice in the dataset, find the number of edges
+        tagged with a confidence of one and the number of edges tagged
+        with a confidence of zero.
+    """
+    dataset_balance_dict = {
+        'false-tags': 0,
+        'positive-tags': 0
+    }
+    for root, _, names in os.walk(dataset_dir):
+        for name in names:
+            if name.endswith('.npz'):
+                lattice_path = os.path.join(root, name)
+                zero_counts, one_counts = target_counts(lattice_path)
+                dataset_balance_dict['false-tags'] += zero_counts
+                dataset_balance_dict['positive-tags'] += one_counts
+    return dataset_balance_dict
+
+
 def main(args):
     """ Primary entry point for the script. """
     if args.processed:
@@ -93,8 +121,14 @@ def main(args):
         edge_count_list = raw_lattice_exploration(args)
 
     stats_dict = generate_statistics(edge_count_list)
+
+    if args.processed and args.dataset_balance:
+        dataset_balance_dict = dataset_balance(args.target_dir)
+        stats_dict.update(dataset_balance_dict)
+
     save_results(stats_dict, args.output_stats)
     print(stats_dict)
+
 
 
 def parse_arguments(args_to_parse):
@@ -125,6 +159,10 @@ def parse_arguments(args_to_parse):
     parser.add_argument(
         '-e', '--extension-dir', type=str, default='',
         help="Extension directory post-dataset directory"
+    )
+    parser.add_argument(
+        '--dataset-balance', default=False, action="store_true",
+        help='Flag to indicate that the operation is operating on processed lattices'
     )
     args = parser.parse_args(args_to_parse)
     return args

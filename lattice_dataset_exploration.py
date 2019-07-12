@@ -40,7 +40,7 @@ def save_results(results_dict, target_file):
 
 def processed_lattice_exploration(args):
     """ Extract and return a list of the number of edges in each HTK lattice. """
-    dataset_dir = args.target_dir
+    dataset_dir = args.lattice_dir
     if not os.path.isdir(dataset_dir):
         raise Exception('{} is not a valid directory'.format(dataset_dir))
 
@@ -141,16 +141,16 @@ def parse_arguments(args_to_parse):
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument(
-        '-i', '--target-dir', type=str, default='',
-        help='Location of the dataset with the uncompressed lattice files (*.npz)'
-    )
-    parser.add_argument(
         '-o', '--output-stats', type=str, required=True,
         help='The file to save the exploration statistics.'
     )
     parser.add_argument(
         '--processed', default=False, action="store_true",
         help='Flag to indicate that the operation is operating on processed lattices'
+    )
+    parser.add_argument(
+        '-l', '--lattice-dir', type=str, default='',
+        help='Location of the dataset with the uncompressed lattice files (*.npz)'
     )
     parser.add_argument(
         '-b', '--base-lat-dir', type=str, default='',
@@ -163,6 +163,10 @@ def parse_arguments(args_to_parse):
     parser.add_argument(
         '--dataset-balance', default=False, action="store_true",
         help='Flag to indicate that the operation is operating on processed lattices'
+    )
+    parser.add_argument(
+        '-t', '--target-dir', type=str, default='',
+        help='Location of the targets which accompany the processed dataset (*.npz)'
     )
     args = parser.parse_args(args_to_parse)
     return args

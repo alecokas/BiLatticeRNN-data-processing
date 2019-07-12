@@ -10,11 +10,12 @@ def find_unique_names(file_names_1, file_names_2):
     unique_names = set()
     paired_names = set()
 
-    for name in file_names_1:
-        if name in file_names_2:
-            paired_names.add(name)
-        else:
-            unique_names.add(name)
+    if file_names_1 is not None:
+        for name in file_names_1:
+            if name in file_names_2:
+                paired_names.add(name)
+            else:
+                unique_names.add(name)
 
     if file_names_2 is not None:
         for name in file_names_2:

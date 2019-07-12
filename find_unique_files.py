@@ -16,9 +16,10 @@ def find_unique_names(file_names_1, file_names_2):
         else:
             unique_names.add(name)
 
-    for name in file_names_2:
-        if not name in paired_names and not name in unique_names:
-            unique_names.add(name)
+    if file_names_2 is not None:
+        for name in file_names_2:
+            if not name in paired_names and not name in unique_names:
+                unique_names.add(name)
     
     return unique_names
             

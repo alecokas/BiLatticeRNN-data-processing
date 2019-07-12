@@ -32,6 +32,7 @@ def main(dir1, dir2):
 
 
 if __name__ == '__main__':
-    dir1 = ''
-    dir2 = ''
+    # TODO: Add CLI for modular use
+    dir1 = '/home/babel/BABEL_OP3_404/releaseB/exp-graphemic-ak2132/scripts/data/dev-grapheme-lat/target_overlap_0.1'
+    dir2 = '/home/babel/BABEL_OP3_404/releaseB/exp-graphemic-ak2132/scripts/data/dev-word-lat/target_overlap_0.1'
     main(dir1, dir2)

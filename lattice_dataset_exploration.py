@@ -109,7 +109,6 @@ def dataset_balance(dataset_dir):
         'positive-tags-per-lattice': []
     }
 
-    pos_neg_ratio = []
     for root, _, names in os.walk(dataset_dir):
         for name in names:
             if name.endswith('.npz'):
@@ -119,11 +118,15 @@ def dataset_balance(dataset_dir):
                 dataset_balance_dict['total-positive-tags'] += one_counts
                 dataset_balance_dict['negative-tags-per-lattice'].append(zero_counts)
                 dataset_balance_dict['positive-tags-per-lattice'].append(one_counts)
-                pos_neg_ratio.append(float(one_counts) / (one_counts + zero_counts))
 
-    dataset_balance_dict['pmf-pos-neg-ratio'] = np.histogram(
-        pos_neg_ratio,
-        bins=np.arange(len(pos_neg_ratio)) / len(pos_neg_ratio),
+    dataset_balance_dict['pmf-pos'] = np.histogram(
+        dataset_balance_dict['positive-tags-per-lattice'],
+        bins=np.arange(np.arange(np.max(dataset_balance_dict['positive-tags-per-lattice']) + 1)),
+        density=True
+    )
+    dataset_balance_dict['pmf-neg'] = np.histogram(
+        dataset_balance_dict['negative-tags-per-lattice'],
+        bins=np.arange(np.arange(np.max(dataset_balance_dict['negative-tags-per-lattice']) + 1)),
         density=True
     )
     return dataset_balance_dict
@@ -137,18 +140,23 @@ def read_pickle(file_name):
 
 
 def visualise(stats, pickle_name):
-    print(stats)
     num_arcs_hist, num_arcs_bin_edges = stats['pmf']
     histogram_image(
         hist=num_arcs_hist,
         bin_edges=num_arcs_bin_edges,
         file_name='{}-{}'.format(pickle_name[:-7], 'arc-count-distribution.png')
     )
-    pos_neg_ratio_hist, pos_neg_ratio_bins = stats['pmf-pos-neg-ratio']
+    pos_count_hist, pos_count_bins = stats['pmf-pos']
     histogram_image(
-        hist=pos_neg_ratio_hist,
-        bin_edges=pos_neg_ratio_bins,
-        file_name='{}-{}'.format(pickle_name[:-7], 'pos-neg-distribution.png')
+        hist=pos_count_hist,
+        bin_edges=pos_count_bins,
+        file_name='{}-{}'.format(pickle_name[:-7], 'pos-distribution.png')
+    )
+    neg_count_hist, neg_count_bins = stats['pmf-neg']
+    histogram_image(
+        hist=neg_count_hist,
+        bin_edges=neg_count_bins,
+        file_name='{}-{}'.format(pickle_name[:-7], 'neg-distribution.png')
     )
 
 

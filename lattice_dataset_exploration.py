@@ -1,5 +1,6 @@
 import argparse
 import gzip
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pickle
@@ -113,21 +114,40 @@ def dataset_balance(dataset_dir):
     return dataset_balance_dict
 
 
+def read_pickle(file_name):
+    """ Load the pickle file
+    """
+    with (open(file_name, "rb")) as openfile:
+        return pickle.load(openfile)
+
+
+def visualise(stats, pickle_name):
+    print(stats)
+    hist, bin_edges = stats['pmf']
+    plt.bar(bin_edges[:-1], hist, width = 1)
+    plt.xlim(min(bin_edges), max(bin_edges))
+    plt.savefig('{}-{}'.format(pickle_name, 'arc-distribution.png'))
+
+
 def main(args):
     """ Primary entry point for the script. """
-    if args.processed:
-        edge_count_list = processed_lattice_exploration(args)
+    if args.visualise_stats != '':
+        stats = read_pickle(args.visualise_stats)
+        visualise(stats, args.visualise_stats)
     else:
-        edge_count_list = raw_lattice_exploration(args)
+        if args.processed:
+            edge_count_list = processed_lattice_exploration(args)
+        else:
+            edge_count_list = raw_lattice_exploration(args)
 
-    stats_dict = generate_statistics(edge_count_list)
+        stats_dict = generate_statistics(edge_count_list)
 
-    if args.processed and args.dataset_balance:
-        dataset_balance_dict = dataset_balance(args.target_dir)
-        stats_dict.update(dataset_balance_dict)
+        if args.processed and args.dataset_balance:
+            dataset_balance_dict = dataset_balance(args.target_dir)
+            stats_dict.update(dataset_balance_dict)
 
-    save_results(stats_dict, args.output_stats)
-    print(stats_dict)
+        save_results(stats_dict, args.output_stats)
+        print(stats_dict)
 
 
 
@@ -150,7 +170,7 @@ def parse_arguments(args_to_parse):
     )
     parser.add_argument(
         '-l', '--lattice-dir', type=str, default='',
-        help='Location of the dataset with the uncompressed lattice files (*.npz)'
+        help='Location of the dataset with the unzipped lattice files (*.npz)'
     )
     parser.add_argument(
         '-b', '--base-lat-dir', type=str, default='',
@@ -167,6 +187,10 @@ def parse_arguments(args_to_parse):
     parser.add_argument(
         '-t', '--target-dir', type=str, default='',
         help='Location of the targets which accompany the processed dataset (*.npz)'
+    )
+    parser.add_argument(
+        '-v', '--visualise-stats', type=str, default='None',
+        help='The name of the stats file to visualise'
     )
     args = parser.parse_args(args_to_parse)
     return args

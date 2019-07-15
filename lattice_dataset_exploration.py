@@ -101,16 +101,29 @@ def dataset_balance(dataset_dir):
         with a confidence of zero.
     """
     dataset_balance_dict = {
-        'false-tags': 0,
-        'positive-tags': 0
+        'total-false-tags': 0,
+        'total-positive-tags': 0,
+        'false-tags-per-lattice': [],
+        'positive-tags-per-lattice': []
     }
+
+    true_false_ratio = []
     for root, _, names in os.walk(dataset_dir):
         for name in names:
             if name.endswith('.npz'):
                 lattice_path = os.path.join(root, name)
                 zero_counts, one_counts = target_counts(lattice_path)
-                dataset_balance_dict['false-tags'] += zero_counts
-                dataset_balance_dict['positive-tags'] += one_counts
+                dataset_balance_dict['total-false-tags'] += zero_counts
+                dataset_balance_dict['total-positive-tags'] += one_counts
+                dataset_balance_dict['false-tags-per-lattice'].append(zero_counts)
+                dataset_balance_dict['positive-tags-per-lattice'].append(one_counts)
+                true_false_ratio.append(float(one_counts) / (one_counts + zero_counts))
+
+    dataset_balance_dict['pmf-true-false-ratio'] = np.histogram(
+        true_false_ratio,
+        bins=np.arange(np.max(true_false_ratio) + 1),
+        density=True
+    )
     return dataset_balance_dict
 
 
@@ -131,7 +144,7 @@ def visualise(stats, pickle_name):
 
 def main(args):
     """ Primary entry point for the script. """
-    if args.visualise_stats != '':
+    if args.visualise_stats != 'None':
         stats = read_pickle(args.visualise_stats)
         visualise(stats, args.visualise_stats)
     else:

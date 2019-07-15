@@ -1,5 +1,7 @@
 import argparse
 import gzip
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -131,7 +133,7 @@ def visualise(stats, pickle_name):
 
 def main(args):
     """ Primary entry point for the script. """
-    if args.visualise_stats != '':
+    if args.visualise_stats != 'None':
         stats = read_pickle(args.visualise_stats)
         visualise(stats, args.visualise_stats)
     else:

@@ -109,23 +109,19 @@ def dataset_balance(dataset_dir):
         'positive-tags-per-lattice': []
     }
 
-    true_false_ratio = []
+    pos_neg_ratio = []
     for root, _, names in os.walk(dataset_dir):
         for name in names:
             if name.endswith('.npz'):
                 lattice_path = os.path.join(root, name)
                 zero_counts, one_counts = target_counts(lattice_path)
-                dataset_balance_dict['total-false-tags'] += zero_counts
+                dataset_balance_dict['total-negative-tags'] += zero_counts
                 dataset_balance_dict['total-positive-tags'] += one_counts
-                dataset_balance_dict['false-tags-per-lattice'].append(zero_counts)
+                dataset_balance_dict['negative-tags-per-lattice'].append(zero_counts)
                 dataset_balance_dict['positive-tags-per-lattice'].append(one_counts)
-                true_false_ratio.append(float(one_counts) / (one_counts + zero_counts))
+                pos_neg_ratio.append(float(one_counts) / (one_counts + zero_counts))
 
-    dataset_balance_dict['pmf-true-false-ratio'] = np.histogram(
-        true_false_ratio,
-        bins=np.arange(np.max(true_false_ratio) + 1),
-        density=True
-    )
+    dataset_balance_dict['pmf-pos-neg-ratio'] = np.histogram(pos_neg_ratio, density=True)
     return dataset_balance_dict
 
 

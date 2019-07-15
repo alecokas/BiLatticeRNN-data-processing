@@ -161,7 +161,7 @@ def parse_arguments(args_to_parse):
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument(
-        '-o', '--output-stats', type=str, required=True,
+        '-o', '--output-stats', type=str, default='lattice-statistics',
         help='The file to save the exploration statistics.'
     )
     parser.add_argument(

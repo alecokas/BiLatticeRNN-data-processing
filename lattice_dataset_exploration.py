@@ -121,7 +121,11 @@ def dataset_balance(dataset_dir):
                 dataset_balance_dict['positive-tags-per-lattice'].append(one_counts)
                 pos_neg_ratio.append(float(one_counts) / (one_counts + zero_counts))
 
-    dataset_balance_dict['pmf-pos-neg-ratio'] = np.histogram(pos_neg_ratio, density=True)
+    dataset_balance_dict['pmf-pos-neg-ratio'] = np.histogram(
+        pos_neg_ratio,
+        bins=np.arange(len(pos_neg_ratio)) / len(pos_neg_ratio),
+        density=True
+    )
     return dataset_balance_dict
 
 

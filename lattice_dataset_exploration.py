@@ -103,9 +103,9 @@ def dataset_balance(dataset_dir):
         with a confidence of zero.
     """
     dataset_balance_dict = {
-        'total-false-tags': 0,
+        'total-negative-tags': 0,
         'total-positive-tags': 0,
-        'false-tags-per-lattice': [],
+        'negative-tags-per-lattice': [],
         'positive-tags-per-lattice': []
     }
 
@@ -138,10 +138,24 @@ def read_pickle(file_name):
 
 def visualise(stats, pickle_name):
     print(stats)
-    hist, bin_edges = stats['pmf']
+    num_arcs_hist, num_arcs_bin_edges = stats['pmf']
+    histogram_image(
+        hist=num_arcs_hist,
+        bin_edges=num_arcs_bin_edges,
+        file_name='{}-{}'.format(pickle_name[:-7], 'arc-count-distribution.png')
+    )
+    pos_neg_ratio_hist, pos_neg_ratio_bins = stats['pmf-pos-neg-ratio']
+    histogram_image(
+        hist=pos_neg_ratio_hist,
+        bin_edges=pos_neg_ratio_bins,
+        file_name='{}-{}'.format(pickle_name[:-7], 'pos-neg-distribution.png')
+    )
+
+
+def histogram_image(hist, bin_edges, file_name):
     plt.bar(bin_edges[:-1], hist, width = 1)
     plt.xlim(min(bin_edges), max(bin_edges))
-    plt.savefig('{}-{}'.format(pickle_name, 'arc-distribution.png'))
+    plt.savefig(file_name)
 
 
 def main(args):

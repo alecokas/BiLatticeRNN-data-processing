@@ -59,22 +59,25 @@ def read_reference_lst_files(dataset_split_dir='info/reference-lists'):
         dataset_dict[dataset_name] = file_set
     return dataset_dict
     
-def save_train_val_test_split(reference_dict, path_list, target_destination):
+def save_train_val_test_split(reference_dict, path_list, target_destination, confusion_net=False):
     """ Save the train, cv, test set splits by producing a *.lat.txt file for each subset with
         the absolute paths to the HTK lattices.
     """
     lattice_name_list = []
 
     for abs_path in path_list:
-        result = re.search(r'.*\/(.*)(\.lat\.gz)', abs_path)
+        if confusion_net:
+            result = re.search(r'.*\/(.*)(\.scf\.gz)', abs_path)
+        else:
+            result = re.search(r'.*\/(.*)(\.lat\.gz)', abs_path)
         lattice_name_list.append(result.group(1))
 
     for dataset_name, lattice_set in reference_dict.items():
         dataset_list = [abs_path for name, abs_path in zip(lattice_name_list, path_list) if name in lattice_set]
-        save_txt_file(dataset_list, os.path.join(target_destination, dataset_name))
+        save_txt_file(dataset_list, os.path.join(target_destination, dataset_name), confusion_net)
         
 
-def save_txt_file(path_list, txt_file_name):
+def save_txt_file(path_list, txt_file_name, confusion_net):
     """ Save the list of absolute HTK lattice paths to a text file with the extension .lat.txt """
     # Remove file if it exists
     try:
@@ -82,7 +85,11 @@ def save_txt_file(path_list, txt_file_name):
     except OSError:
         pass
     # Write to new file
-    with open(txt_file_name + '.lat.txt', 'a+') as txt_file:
+    if confusion_net:
+        extension = '.cn.txt'
+    else:
+        extension = '.lat.txt'
+    with open(txt_file_name + extension, 'a+') as txt_file:
         for path in path_list:
             txt_file.write(path + '\n')
 
@@ -111,6 +118,10 @@ def parse_arguments(args_to_parse):
     parser.add_argument(
         '-i', '--input-dir', type=str, default='info/reference-lists',
         help="The directory with the train, cv, and test files which indicate the dataset split (.lst)"
+    )
+    parser.add_argument(
+        '--confusion-net', default=False, action='store_true',
+        help='Operate over confusion networks rather than lattices (these end in *.scf.gz rather that *.lat.gz)'
     )
 
     args = parser.parse_args(args_to_parse)

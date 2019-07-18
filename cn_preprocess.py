@@ -47,7 +47,7 @@ class CN:
         self.cn_arcs.reverse()
         self.num_arcs.reverse()
 
-    def convert_to_lattice(self, wordvec_dict, dst_dir, log, dec_tree, ignore_time_seg):
+    def convert_to_lattice(self, wordvec_dict, subword_embedding, dst_dir, log, dec_tree, ignore_time_seg, processed_file_list_path=None):
         """Convert confusion network object to lattice `.npz` format."""
         utils.mkdir(dst_dir)
         if ignore_time_seg != False:
@@ -115,6 +115,12 @@ class CN:
                  topo_order=topo_order, child_2_parent=child_2_parent,
                  parent_2_child=parent_2_child, edge_data=np.asarray(edge_data),
                  ignore=ignore)
+        if processed_file_list_path is not None:
+            append_path_to_txt(os.path.abspath(name), processed_file_list_path)
+
+def append_path_to_txt(path_to_add, target_file):
+    with open(target_file, "a") as file:
+        file.write(path_to_add + '\n')
 
 def load_wordvec(path):
     """Load pre-computed word vectors.
@@ -130,7 +136,7 @@ def load_wordvec(path):
     wordvec = np.load(path).item()
     return wordvec
 
-def process_one_cn(cn_path, dst_dir, wordvec_dict, log, dec_tree, ignore_time_seg):
+def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_tree, ignore_time_seg, processed_file_list_path=None):
     """Process a single confusion network.
 
     Arguments:
@@ -143,7 +149,7 @@ def process_one_cn(cn_path, dst_dir, wordvec_dict, log, dec_tree, ignore_time_se
     try:
         LOGGER.info(name)
         confusion_net = CN(cn_path)
-        confusion_net.convert_to_lattice(wordvec_dict, dst_dir, log, dec_tree, ignore_time_seg)
+        confusion_net.convert_to_lattice(wordvec_dict, subword_embedding, dst_dir, log, dec_tree, ignore_time_seg, processed_file_list_path)
     except OSError as exception:
         LOGGER.info('%s\n' %cn_path + str(exception))
 
@@ -229,7 +235,10 @@ def main():
         for cn in cn_list:
             file_name = cn.split('/')[-1]
             print('Processing {}'.format(file_name[:-7]))
-            process_one_cn(cn, args.dst_dir, wordvec, args.log, args.dec_tree, args.ignore_time_seg)
+            process_one_cn(
+                cn, args.dst_dir, wordvec, subword_embedding, args.log,
+                args.dec_tree, args.ignore_time_seg, processed_subset_list[i]
+            )
 
 
 if __name__ == '__main__':

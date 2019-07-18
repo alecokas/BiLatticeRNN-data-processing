@@ -153,43 +153,66 @@ def main():
         description='confusion network pre-processing')
     parser.add_argument('language_code', type=str,
                         help='babel language code')
-    parser.add_argument('dataset', type=str,
-                        help='name of dataset')
-    parser.add_argument('fileList', type=str,
-                        help='a file containing a list of lattice paths')
-    parser.add_argument('root_dir', type=str, help='root experimental directory')
-    parser.add_argument('-l', '--log', default=False, action='store_true',
-                        help='use posterior probabilities in log domain')
-    parser.add_argument('-v', '--verbose',
-                        help='Set logging level: ERROR (default), '\
-                             'WARNING (-v), INFO (-vv), DEBUG (-vvv)',
-                        action='count', default=0)
-    parser.add_argument('-n', '--num_threads',
-                        help='number of threads to use for concurrency',
-                        type=int, default=30)
-    parser.add_argument('--decision_tree', type=str, dest='dec_tree', required=False, default='NONE')
-    parser.add_argument('--ignore_time_seg', dest='ignore_time_seg', required=False, default=False)
+    parser.add_argument('-d', '--dataset_dir', type=str,
+                        help='The dataset directory')
+    parser.add_argument(
+        '-d', '--dst-dir', type=str,
+        help='Location to save the processed confusion network files (*.npz)'
+    )
+    parser.add_argument(
+        '-e', '--embedding', type=str, required=True,
+        help='Full path to the file containing a dictionary with the grapheme / phone embeddings'
+    )
+    parser.add_argument(
+        '-w', '--wordvec', type=str, required=True,
+        help='Full path to the file containing a dictionary with the word vector embeddings'
+    )
+    parser.add_argument(
+        '-f', '--file-list-dir', type=str,
+        help='The directory containing the files with the lists of lattice absolute paths for each subset (*.lat.txt)'
+    )
+    parser.add_argument(
+        '-l', '--log', default=False, action='store_true',
+        help='use posterior probabilities in log domain'
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        help='Set logging level: ERROR (default), '\
+             'WARNING (-v), INFO (-vv), DEBUG (-vvv)',
+        action='count', default=0
+    )
+    parser.add_argument(
+        '-n', '--num_threads',
+        help='number of threads to use for concurrency',
+        type=int, default=30
+    )
+    parser.add_argument(
+        '--decision_tree', type=str, dest='dec_tree', required=False, default='NONE'
+    )
+    parser.add_argument(
+        '--ignore_time_seg', dest='ignore_time_seg', required=False, default=False
+    )
     args = parser.parse_args()
 
     global LOGGER
     LOGGER = utils.get_logger(args.verbose)
-    root = args.root_dir
 
-    data_dir = os.path.join(root, 'data', args.dataset)
+    data_dir = os.path.join(args.dataset_dir)
     utils.check_dir(data_dir)
-    wordvec_path = os.path.join(data_dir, 'wordvec.npy')
-    dst_dir = os.path.join(data_dir, 'lattices')
-    utils.mkdir(dst_dir)
-    wordvec_dict = load_wordvec(wordvec_path)
+
+    utils.mkdir(args.dst_dir)
+
+    wordvec_dict = load_wordvec(args.wordvec)
+    embedding_dict = load_wordvec(args.embedding)
 
     cn_list = []
-    with open(os.path.abspath(args.fileList), 'r') as file_in:
+    with open(os.path.abspath(args.file_list_dir), 'r') as file_in:
         for line in file_in:
             cn_list.append(line.strip())
     for cn in cn_list:
         file_name = cn.split('/')[-1]
         print('Processing {}'.format(file_name[:-7]))
-        process_one_cn(cn, dst_dir, wordvec_dict, args.log, args.dec_tree, args.ignore_time_seg)
+        process_one_cn(cn, args.dst_dir, wordvec_dict, args.log, args.dec_tree, args.ignore_time_seg)
 
 
 if __name__ == '__main__':

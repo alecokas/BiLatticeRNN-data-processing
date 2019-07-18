@@ -19,13 +19,14 @@ LEN_GRAPHEME_FEATURES = 5
 class CN:
     """Confusion networks from file."""
 
-    def __init__(self, path):
+    def __init__(self, path, ignore_graphemes=False):
         """Confusion network constructor."""
         self.path = path
         self.cn_arcs = []
         self.num_sets = None
         self.num_arcs = []
         self.has_graphemes = False
+        self.ignore_graphemes = ignore_graphemes
 
         utils.check_file(self.path)
         self.name = self.path.split('/')[-1].strip('.scf.gz')
@@ -45,6 +46,8 @@ class CN:
                 for j in range(num_arcs):
                     line = file_in.readline().split()
                     # W=word s=start e=end p=posterior (Optionally d=grapheme-information)
+                    if self.ignore_graphemes:
+                        line = line[:-1]
                     if len(line) == 5:
                         self.has_graphemes = True
                     if len(line) == 4 or len(line) == 5:

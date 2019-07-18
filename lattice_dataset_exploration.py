@@ -161,7 +161,7 @@ def visualise(stats, pickle_name):
 
 
 def histogram_image(hist, bin_edges, file_name):
-    plt.bar(bin_edges[:-1], hist, width = 1)
+    plt.bar(bin_edges[:-1], hist, width=1)
     plt.xlim(min(bin_edges), max(bin_edges))
     plt.savefig(file_name)
 

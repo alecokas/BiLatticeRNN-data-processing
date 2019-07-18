@@ -285,7 +285,7 @@ def main():
 
     parser.add_argument(
         '-d', '--dst-dir', type=str,
-        help='Location to save the uncompressed lattice files (*.npz)'
+        help='Location to save the processed lattice files (*.npz)'
     )
     parser.add_argument(
         '-e', '--embedding', type=str, required=True,
@@ -319,12 +319,14 @@ def main():
     LOGGER = utils.get_logger(args.verbose)
 
     dst_dir = args.dst_dir
-    utils.check_dir(args.dst_dir)
+    utils.check_dir(dst_dir)
     file_list_dir = args.file_list_dir
-    utils.check_dir(args.dst_dir)
+    utils.check_dir(file_list_dir)
 
-    subword_embedding_path = os.path.join(args.embedding)
     wordvec_path = os.path.join(args.wordvec)
+    wordvec = load_wordvec(wordvec_path)
+    subword_embedding_path = os.path.join(args.embedding)
+    subword_embedding = load_wordvec(subword_embedding_path)
 
     subset_list = ['train.lat.txt', 'cv.lat.txt', 'test.lat.txt']
     processed_subset_list = []
@@ -341,12 +343,11 @@ def main():
         processed_subset_list.append(preprocessed_list_file)
 
     for i, subset in enumerate(subset_list):
-        file_list = os.path.join(file_list_dir, subset)
-        subword_embedding = load_wordvec(subword_embedding_path)
-        wordvec = load_wordvec(wordvec_path)
+        lat_file_list = os.path.join(file_list_dir, subset)
 
+        # Compile the list of lat.gz files to process
         lattice_list = []
-        with open(os.path.abspath(file_list), 'r') as file_in:
+        with open(os.path.abspath(lat_file_list), 'r') as file_in:
             for line in file_in:
                 lattice_list.append(line.strip())
 

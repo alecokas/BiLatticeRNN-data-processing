@@ -150,11 +150,8 @@ def process_one_cn(cn_path, dst_dir, wordvec_dict, log, dec_tree, ignore_time_se
 def main():
     """Main function for converting CN into `.npz` lattices."""
     parser = argparse.ArgumentParser(
-        description='confusion network pre-processing')
-    parser.add_argument('language_code', type=str,
-                        help='babel language code')
-    parser.add_argument('-d', '--dataset_dir', type=str,
-                        help='The dataset directory')
+        description='confusion network pre-processing'
+    )
     parser.add_argument(
         '-d', '--dst-dir', type=str,
         help='Location to save the processed confusion network files (*.npz)'

@@ -150,7 +150,7 @@ def main():
         type=float, default=0.5
     )
     parser.add_argument(
-        '--lev', dest='lev', required=False, default=False
+        '--lev', dest='lev', action='store_true', default=False, help='Use Levenshtein distance metric for arc tagging'
     )
     args = parser.parse_args()
 

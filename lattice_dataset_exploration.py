@@ -121,12 +121,12 @@ def dataset_balance(dataset_dir):
 
     dataset_balance_dict['pmf-pos'] = np.histogram(
         dataset_balance_dict['positive-tags-per-lattice'],
-        bins=np.arange(np.arange(np.max(dataset_balance_dict['positive-tags-per-lattice']) + 1)),
+        bins=np.arange(np.max(dataset_balance_dict['positive-tags-per-lattice']) + 1),
         density=True
     )
     dataset_balance_dict['pmf-neg'] = np.histogram(
         dataset_balance_dict['negative-tags-per-lattice'],
-        bins=np.arange(np.arange(np.max(dataset_balance_dict['negative-tags-per-lattice']) + 1)),
+        bins=np.arange(np.max(dataset_balance_dict['negative-tags-per-lattice']) + 1),
         density=True
     )
     return dataset_balance_dict

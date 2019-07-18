@@ -29,13 +29,16 @@ def compile_lattice_list(base_directory='/home/dawna/babel/BABEL_OP3_404/release
     path_list = []
     for subset in subsets:
         subset_dir = os.path.join(base_directory, subset)
-        speaker_dirs = next(os.walk(os.path.join(base_directory, subset)))[1]
-        for speaker_dir in speaker_dirs:
-            raw_lattice_dir = os.path.join(subset_dir, speaker_dir, ext_dir)
-            raw_lattice_list = next(os.walk(raw_lattice_dir))[2]
-            for lattice_name in raw_lattice_list:
-                abs_path = os.path.join(raw_lattice_dir, lattice_name)
-                path_list.append(abs_path)
+        if os.path.isdir(subset_dir):
+            speaker_dirs = next(os.walk(os.path.join(base_directory, subset)))[1]
+            for speaker_dir in speaker_dirs:
+                raw_lattice_dir = os.path.join(subset_dir, speaker_dir, ext_dir)
+                raw_lattice_list = next(os.walk(raw_lattice_dir))[2]
+                for lattice_name in raw_lattice_list:
+                    abs_path = os.path.join(raw_lattice_dir, lattice_name)
+                    path_list.append(abs_path)
+        else:
+            print('Warning: {} is not a directory'.format(subset_dir))
     return path_list
 
 

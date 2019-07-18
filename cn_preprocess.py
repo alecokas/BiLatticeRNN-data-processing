@@ -169,6 +169,10 @@ def main():
         help='The directory containing the files with the lists of lattice absolute paths for each subset (*.lat.txt)'
     )
     parser.add_argument(
+        '-p', '--processed-file-list-dir', type=str,
+        help='The directory in which to save files with paths to the processed confusion networks (*.txt).'
+    )  
+    parser.add_argument(
         '-l', '--log', default=False, action='store_true',
         help='use posterior probabilities in log domain'
     )
@@ -194,22 +198,38 @@ def main():
     global LOGGER
     LOGGER = utils.get_logger(args.verbose)
 
-    data_dir = os.path.join(args.dataset_dir)
-    utils.check_dir(data_dir)
+    dst_dir = args.dst_dir
+    utils.check_dir(dst_dir)
+    file_list_dir = args.file_list_dir
+    utils.check_dir(file_list_dir)
 
-    utils.mkdir(args.dst_dir)
+    wordvec_path = os.path.join(args.wordvec)
+    wordvec = load_wordvec(wordvec_path)
+    subword_embedding_path = os.path.join(args.embedding)
+    subword_embedding = load_wordvec(subword_embedding_path)
 
-    wordvec_dict = load_wordvec(args.wordvec)
-    embedding_dict = load_wordvec(args.embedding)
+    subset_list = ['train.cn.txt', 'cv.cn.txt', 'test.cn.txt']
+    processed_subset_list = []
 
-    cn_list = []
-    with open(os.path.abspath(args.file_list_dir), 'r') as file_in:
-        for line in file_in:
-            cn_list.append(line.strip())
-    for cn in cn_list:
-        file_name = cn.split('/')[-1]
-        print('Processing {}'.format(file_name[:-7]))
-        process_one_cn(cn, args.dst_dir, wordvec_dict, args.log, args.dec_tree, args.ignore_time_seg)
+    for subset in subset_list:
+        subset_name = subset.split('.')[0] + '.' + subset.split('.')[2]
+        preprocessed_list_file = os.path.join(args.processed_file_list_dir, subset_name)
+        utils.remove_file(preprocessed_list_file)
+        processed_subset_list.append(preprocessed_list_file)
+
+    for i, subset in enumerate(subset_list):
+        lat_file_list = os.path.join(file_list_dir, subset)
+
+        # Compile the list of CN files to process
+        cn_list = []
+        with open(os.path.abspath(lat_file_list), 'r') as file_in:
+            for line in file_in:
+                cn_list.append(line.strip())
+
+        for cn in cn_list:
+            file_name = cn.split('/')[-1]
+            print('Processing {}'.format(file_name[:-7]))
+            process_one_cn(cn, args.dst_dir, wordvec, args.log, args.dec_tree, args.ignore_time_seg)
 
 
 if __name__ == '__main__':

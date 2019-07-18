@@ -334,12 +334,7 @@ def main():
     for subset in subset_list:
         subset_name = subset.split('.')[0] + '.' + subset.split('.')[2]
         preprocessed_list_file = os.path.join(args.processed_file_list_dir, subset_name)
-
-        try:
-            os.remove(preprocessed_list_file)
-        except OSError:
-            pass
-
+        utils.remove_file(preprocessed_list_file)
         processed_subset_list.append(preprocessed_list_file)
 
     for i, subset in enumerate(subset_list):

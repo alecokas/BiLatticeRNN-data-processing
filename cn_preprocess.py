@@ -126,7 +126,7 @@ class CN:
                 
                 # Deal with any grapheme data if required:
                 if self.has_graphemes:
-                    grapheme_feature_array = get_grapheme_info(self.cn_arcs[4:], subword_embedding)
+                    grapheme_feature_array = get_grapheme_info(self.cn_arcs[i][4], subword_embedding)
                     grapheme_data.append(grapheme_feature_array)
 
         # go through the array now and put it in a big masked array so it is just ine simple numpy array (I, J, F)
@@ -139,12 +139,13 @@ class CN:
 
         masked_grapheme_data = ma.masked_array(padded_grapheme_data, mask=mask, fill_value=-999999)
 
-        np.savez(os.path.join(dst_dir, self.name + '.npz'),
+        npz_file_name = os.path.join(dst_dir, self.name + '.npz')
+        np.savez(npz_file_name,
                  topo_order=topo_order, child_2_parent=child_2_parent,
                  parent_2_child=parent_2_child, edge_data=np.asarray(edge_data),
                  ignore=ignore, grapheme_data=masked_grapheme_data)
         if processed_file_list_path is not None:
-            append_path_to_txt(os.path.abspath(name), processed_file_list_path)
+            append_path_to_txt(os.path.abspath(npz_file_name), processed_file_list_path)
 
 def append_path_to_txt(path_to_add, target_file):
     with open(target_file, "a") as file:

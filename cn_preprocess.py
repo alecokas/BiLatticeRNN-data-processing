@@ -1,14 +1,20 @@
 """Preprocess confusion networks into `.npz` lattice format."""
 
-import os
-import gzip
 import argparse
-import pickle
+import gzip
 from itertools import repeat
 from multiprocessing import Pool
 import numpy as np
-import utils
+import numpy.ma as ma
+import os
+import pickle
+import re
 from trees import Tree
+import utils
+
+
+LEN_GRAPHEME_FEATURES = 5
+
 
 class CN:
     """Confusion networks from file."""
@@ -19,6 +25,7 @@ class CN:
         self.cn_arcs = []
         self.num_sets = None
         self.num_arcs = []
+        self.has_graphemes = False
 
         utils.check_file(self.path)
         self.name = self.path.split('/')[-1].strip('.scf.gz')
@@ -28,18 +35,22 @@ class CN:
         """Load `.scf.gz` file into CN object."""
         with gzip.open(self.path, 'rt', encoding='utf-8') as file_in:
             line = file_in.readline().split('=')
-            assert line[0] == 'N', "Problem with the first line."
+            assert line[0] == 'N', "Problem with the first line, expected N=num_sets."
             self.num_sets = int(line[1])
             for i in range(self.num_sets):
                 line = file_in.readline().split('=')
-                assert line[0] == 'k', "Problem with the start of the set."
+                assert line[0] == 'k', "Problem with the start of the set, expected k=num_arcs."
                 num_arcs = int(line[1])
                 self.num_arcs.append(num_arcs)
                 for j in range(num_arcs):
                     line = file_in.readline().split()
-                    # W=word s=start e=end p=posterior
-                    assert len(line) == 4, "Wrong format."
-                    self.cn_arcs.append([item.split('=')[1] for item in line])
+                    # W=word s=start e=end p=posterior (Optionally d=grapheme-information)
+                    if len(line) == 5:
+                        self.has_graphemes = True
+                    if len(line) == 4 or len(line) == 5:
+                         self.cn_arcs.append([item.split('=')[1] for item in line])
+                    else:
+                        raise Exception('Unexpected format - all arc lines should contain 4 or 5 elements')
         # Convert all numbers to float, and p in log domain
         for i, arc in enumerate(self.cn_arcs):
             self.cn_arcs[i][1:4] = [float(arc[i]) for i in range(1, 4)]
@@ -59,6 +70,7 @@ class CN:
         cum_sum = np.cumsum([0] + self.num_arcs)
         assert cum_sum[-1] == len(self.cn_arcs), "Wrong number of arcs."
         edge_data = []
+        grapheme_data = []
         child_2_parent = {}
         parent_2_child = {}
         ignore = []
@@ -111,16 +123,117 @@ class CN:
                         for tup in ignore_time_seg_dict[name]:
                             if start_time > tup[0] and end_time < tup[1]:
                                 ignore.append(j)
+                
+                # Deal with any grapheme data if required:
+                if self.has_graphemes:
+                    grapheme_feature_array = get_grapheme_info(self.cn_arcs[4:], subword_embedding)
+                    grapheme_data.append(grapheme_feature_array)
+
+        # go through the array now and put it in a big masked array so it is just ine simple numpy array (I, J, F)
+        max_grapheme_seq_length = longest_grapheme_sequence(grapheme_data)
+        padded_grapheme_data = np.empty((len(grapheme_data), max_grapheme_seq_length, LEN_GRAPHEME_FEATURES))
+        mask = np.empty_like(padded_grapheme_data, dtype=bool)
+
+        for arc_num, grapheme_seq in enumerate(grapheme_data):
+            padded_grapheme_data[arc_num, :, :], mask[arc_num, :, :] = pad_subword_sequence(grapheme_seq, max_grapheme_seq_length)
+
+        masked_grapheme_data = ma.masked_array(padded_grapheme_data, mask=mask, fill_value=-999999)
+
         np.savez(os.path.join(dst_dir, self.name + '.npz'),
                  topo_order=topo_order, child_2_parent=child_2_parent,
                  parent_2_child=parent_2_child, edge_data=np.asarray(edge_data),
-                 ignore=ignore)
+                 ignore=ignore, grapheme_data=masked_grapheme_data)
         if processed_file_list_path is not None:
             append_path_to_txt(os.path.abspath(name), processed_file_list_path)
 
 def append_path_to_txt(path_to_add, target_file):
     with open(target_file, "a") as file:
         file.write(path_to_add + '\n')
+
+def get_grapheme_info(grapheme_info, subword_embedding):
+    """ Extract grapheme information and store it in an array with the following form:
+        ((emb-0-0, emb-0-1, emb-0-2, emb-0-3, dur-0)
+            .       .         .        .       .
+            .       .         .        .       .
+            .       .         .        .       .
+        (emb-J-0, emb-J-1, emb-J-2, emb-J-3, dur-J))
+    """
+    subword_list = grapheme_info.split(':')[1:-1]
+    grapheme_feature_list = np.empty((len(subword_list), LEN_GRAPHEME_FEATURES))
+    for i, subword_info in enumerate(subword_list):
+        subword, subword_dur = subword_info.split(',')[:2]
+        token = strip_phone(subword, 1, False)
+        if subword_embedding is None:
+            raise Exception('No subword embedding!')
+        else:
+            grapheme_feature_list[i, :] = np.append(subword_embedding[token], subword_dur)
+    return grapheme_feature_list
+
+def longest_grapheme_sequence(grapheme_list):
+    max_length_seq = -1
+    for arc in grapheme_list:
+        seq_length = arc.shape[0]
+        if seq_length > max_length_seq:
+            max_length_seq = seq_length
+    if max_length_seq == -1:
+        raise Exception('max_length never updated')
+    # print('Max length: {}'.format(max_length_seq))
+    return max_length_seq
+
+def pad_subword_sequence(subword_seq, max_seq_length):
+    """ The subword sequence (graphemic / phonetic) can be of variable length. In order to store
+        this data in a numpy array, one pads and masks the subword dimension to the max sequence
+        length.
+
+        subword_seq: numpy array with dimensions (graphemes, features)
+        max_seq_length: The length of the maximum subword sequence
+    """
+    pad_count = max_seq_length - subword_seq.shape[0]
+    zero_pads = np.zeros((pad_count, LEN_GRAPHEME_FEATURES))
+    padded_subword_seq = np.concatenate((subword_seq, zero_pads), axis=0)
+
+    valid_array = np.ones_like(zero_pads, dtype=bool)
+    invalid_array = np.zeros_like(subword_seq, dtype=bool)
+    mask = np.concatenate((valid_array, invalid_array), axis=0)
+    return padded_subword_seq, mask
+
+def strip_phone(phone_info, phone_context_width, incl_posn_info):
+    """ Strip phones of context and optionally the location indicator
+
+        Arguments:
+            phone_info: String with the full phone context information and location indicators.
+            phone_context_width: The phone context width as an integer
+            incl_posn_info: A boolean indicator for whether or not to include the phone position information (^I, ^M, ^F)
+    """
+    if phone_context_width > 3:
+        raise Exception('The phone context width cannot be greater than 3.')
+
+    itemised_phone_info = re.split(r'\+|\-', phone_info)
+    if len(itemised_phone_info) == 1:
+        return itemised_phone_info[0] if incl_posn_info else remove_location_indicator(itemised_phone_info[0])
+    elif len(itemised_phone_info) == 3:
+        if phone_context_width > 1:
+            # Assume that if the context is 2 (bigram), we want the include the preceding phone
+            stop = phone_context_width
+            return itemised_phone_info[:stop] if incl_posn_info else remove_location_indicator(itemised_phone_info[:stop])
+        else:
+            return itemised_phone_info[1] if incl_posn_info else remove_location_indicator(itemised_phone_info[1])
+    else:
+        raise Exception('The phone length should be 1 or 3, but found {}'.format(len(itemised_phone_info)))
+
+def remove_location_indicator(phone_with_location):
+    """ Strip location indicators from a string or strings within a list and return the result as a string
+
+        Arguments:
+            phone_with_location: Either a string or list containing the raw phone with location indicators.
+    """
+    if isinstance(phone_with_location, list):
+        clean_phone_list = []
+        for phone in phone_with_location:
+            clean_phone_list.append(phone.split('^')[0])
+        return ' '.join(clean_phone_list)
+    else:
+        return phone_with_location.split('^')[0]
 
 def load_wordvec(path):
     """Load pre-computed word vectors.

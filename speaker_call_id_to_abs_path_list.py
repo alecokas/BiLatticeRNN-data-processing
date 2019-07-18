@@ -141,6 +141,7 @@ def main(args):
         reference_dict=reference_dict,
         path_list=path_list,
         target_destination=args.output_dir,
+        confusion_net=args.confusion_net
     )
 
 

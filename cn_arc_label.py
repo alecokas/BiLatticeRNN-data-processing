@@ -161,13 +161,17 @@ def main():
     stm_dir = os.path.join(args.stm_dir)
     baseline_dict = load_baseline(args.one_best)
 
-    lattice_list = []
-    with open(os.path.abspath(args.file_list_dir), 'r') as file_in:
-        for line in file_in:
-            lattice_list.append(line.strip())
+    subset_list = ['train.txt', 'cv.txt', 'test.txt']
+    for subset in subset_list:
+        file_list = os.path.join(args.file_list_dir, subset)
 
-    for lattice in lattice_list:
-        label(lattice, stm_dir, dst_dir, baseline_dict, np_conf_dir, args.lev, args.threshold)
+    cn_list = []
+    with open(os.path.abspath(file_list), 'r') as file_in:
+        for path_to_lat in file_in:
+            cn_list.append(path_to_lat.strip())
+
+    for cn in cn_list:
+        label(cn, stm_dir, dst_dir, baseline_dict, np_conf_dir, args.lev, args.threshold)
 
 if __name__ == '__main__':
     main()

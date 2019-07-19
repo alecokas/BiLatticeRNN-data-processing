@@ -163,14 +163,16 @@ def main():
     stm_dir = os.path.join(args.stm_dir)
     baseline_dict = load_baseline(args.one_best)
 
+    file_list = []
     subset_list = ['train.cn.txt', 'cv.cn.txt', 'test.cn.txt']
     for subset in subset_list:
-        file_list = os.path.join(args.file_list_dir, subset)
+        file_list.append(os.path.join(args.file_list_dir, subset))
 
     cn_list = []
-    with open(os.path.abspath(file_list), 'r') as file_in:
-        for path_to_lat in file_in:
-            cn_list.append(path_to_lat.strip())
+    for cn_subset_file in file_list:
+        with open(os.path.abspath(cn_subset_file), 'r') as file_in:
+            for path_to_lat in file_in:
+                cn_list.append(path_to_lat.strip())
 
     for cn in cn_list:
         label(cn, stm_dir, dst_dir, baseline_dict, np_conf_dir, args.lev, args.threshold)

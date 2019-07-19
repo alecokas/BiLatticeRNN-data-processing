@@ -73,8 +73,8 @@ def levenshtein_tagging(stm_file, conf_net_file, np_conf_net_file):
 	# compute alignment and generate tags
 	scores, traceback = score_matrix(stm_seq, conf_seqs)
 	align_stm, align_conf = aligned_seq(stm_seq, conf_seqs, traceback)
-	for i in range(len(align_stm)):
-		print("\n", align_stm[i], align_conf[i], "\n")
+	# for i in range(len(align_stm)):
+	# 	print("\n", align_stm[i], align_conf[i], "\n")
 	tags = tagging(align_stm, align_conf)
 
 	#print(align_stm)
@@ -107,8 +107,8 @@ def score_matrix(a, b):
 	for i in range(len(a)+1):
 		for j in range(len(b)+1):
 			scores[i][j]=scores[i][j]
-	print("scores\n",scores)
-	print("traceback\n",traceback)
+	# print("scores\n",scores)
+	# print("traceback\n",traceback)
 	return scores, traceback
 
 def aligned_seq(a, b, traceback):

@@ -250,9 +250,11 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
             # for each edge, the information contains
             # [EMBEDDING_LENGTH, duration(1), AM(1), LM(1), arc_posterior(1)]
             edge_data = np.empty((len(edges), EMBEDDING_LENGTH + 1 + 1 + 1 + 1))
+            start_times = []
             ignore = []
             for i, edge in enumerate(edges):
                 start_node = edge[0]
+                start_times.append(start_node)
                 end_node = edge[1]
                 time = nodes[end_node][0] - nodes[start_node][0]
                 word = nodes[end_node][1]
@@ -266,7 +268,7 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
             # save multiple variables into one .npz file
             np.savez(name, topo_order=topo_order, child_2_parent=child_2_parent,
                      parent_2_child=parent_2_child, edge_data=edge_data,
-                     ignore=ignore, grapheme_data=grapheme_data
+                     ignore=ignore, grapheme_data=grapheme_data, start_times=start_times
             )
             if processed_file_list_path is not None:
                 append_path_to_txt(os.path.abspath(name), processed_file_list_path)

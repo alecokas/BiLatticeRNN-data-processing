@@ -43,7 +43,7 @@ class CN:
                 assert line[0] == 'k', "Problem with the start of the set, expected k=num_arcs."
                 num_arcs = int(line[1])
                 self.num_arcs.append(num_arcs)
-                for j in range(num_arcs):
+                for _ in range(num_arcs):
                     line = file_in.readline().split()
                     # W=word s=start e=end p=posterior (Optionally d=grapheme-information)
                     if self.ignore_graphemes:
@@ -134,15 +134,18 @@ class CN:
                     grapheme_feature_array = get_grapheme_info(self.cn_arcs[i][4], subword_embedding)
                     grapheme_data.append(grapheme_feature_array)
 
-        # go through the array now and put it in a big masked array so it is just ine simple numpy array (I, J, F)
-        max_grapheme_seq_length = longest_grapheme_sequence(grapheme_data)
-        padded_grapheme_data = np.empty((len(grapheme_data), max_grapheme_seq_length, LEN_GRAPHEME_FEATURES))
-        mask = np.empty_like(padded_grapheme_data, dtype=bool)
+        if self.has_graphemes:
+            # go through the array now and put it in a big masked array so it is just ine simple numpy array (I, J, F)
+            max_grapheme_seq_length = longest_grapheme_sequence(grapheme_data)
+            padded_grapheme_data = np.empty((len(grapheme_data), max_grapheme_seq_length, LEN_GRAPHEME_FEATURES))
+            mask = np.empty_like(padded_grapheme_data, dtype=bool)
 
-        for arc_num, grapheme_seq in enumerate(grapheme_data):
-            padded_grapheme_data[arc_num, :, :], mask[arc_num, :, :] = pad_subword_sequence(grapheme_seq, max_grapheme_seq_length)
+            for arc_num, grapheme_seq in enumerate(grapheme_data):
+                padded_grapheme_data[arc_num, :, :], mask[arc_num, :, :] = pad_subword_sequence(grapheme_seq, max_grapheme_seq_length)
 
-        masked_grapheme_data = ma.masked_array(padded_grapheme_data, mask=mask, fill_value=-999999)
+            masked_grapheme_data = ma.masked_array(padded_grapheme_data, mask=mask, fill_value=-999999)
+        else:
+            masked_grapheme_data = None
 
         npz_file_name = os.path.join(dst_dir, self.name + '.npz')
         np.savez(npz_file_name,
@@ -270,6 +273,7 @@ def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_t
         confusion_net = CN(cn_path)
         confusion_net.convert_to_lattice(wordvec_dict, subword_embedding, dst_dir, log, dec_tree, ignore_time_seg, processed_file_list_path)
     except OSError as exception:
+        print('OSError: {}'.format(cn_path))
         LOGGER.info('%s\n' %cn_path + str(exception))
 
 def main():

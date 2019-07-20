@@ -16,7 +16,6 @@ def cn_pass_lev(cn_path, np_cn_path, start_frame, stm_file, coeff=0.5):
     Return indices of arcs on the one-best path and corresponding sequence,
     and label of each arc.
     """
-    print(cn_path)
     confusion_net = CN(cn_path, ignore_graphemes=True)
     cum_sum = np.cumsum([0] + confusion_net.num_arcs)
     assert cum_sum[-1] == len(confusion_net.cn_arcs), "Wrong number of arcs."
@@ -83,7 +82,6 @@ def cn_pass_lev(cn_path, np_cn_path, start_frame, stm_file, coeff=0.5):
 
 def label(lattice_path, stm_dir, dst_dir, baseline_dict, np_conf_dir, lev, threshold=0.5):
     """Read HTK confusion networks and label each arc."""
-    print(lattice_path)
     name = lattice_path.split('/')[-1].split('.')[0]
     np_lattice_path = os.path.join(np_conf_dir, name + '.npz')
     target_name = os.path.join(dst_dir, name + '.npz')

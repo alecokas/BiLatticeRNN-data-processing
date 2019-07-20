@@ -73,6 +73,7 @@ class CN:
         cum_sum = np.cumsum([0] + self.num_arcs)
         assert cum_sum[-1] == len(self.cn_arcs), "Wrong number of arcs."
         edge_data = []
+        start_times = []
         grapheme_data = []
         child_2_parent = {}
         parent_2_child = {}
@@ -112,6 +113,7 @@ class CN:
                     edge_vec = np.concatenate(
                         (wordvec, np.array([edge_info[2] - edge_info[1],
                                             conf])), axis=0)
+                start_times.append(edge_info[1])
                 edge_data.append(edge_vec)
                 if edge_info[0] in ['<s>', '</s>', '!NULL', '<hes>']:
                     ignore.append(j)
@@ -146,7 +148,7 @@ class CN:
         np.savez(npz_file_name,
                  topo_order=topo_order, child_2_parent=child_2_parent,
                  parent_2_child=parent_2_child, edge_data=np.asarray(edge_data),
-                 ignore=ignore, grapheme_data=masked_grapheme_data)
+                 ignore=ignore, grapheme_data=masked_grapheme_data, start_times=start_times)
         if processed_file_list_path is not None:
             append_path_to_txt(os.path.abspath(npz_file_name), processed_file_list_path)
 

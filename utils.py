@@ -26,15 +26,19 @@ def savecmd(directory, cmd):
         file.write(' '.join(cmd) + '\n')
         file.write(cmdsep)
 
-def get_logger(level):
+def get_logger(level, log_file_name=None):
     '''Set logger object for stdout logging.
         Input: verbosity level specified in argument
         Return: logger object
     '''
     infoformat = '%(asctime)s %(levelname)-7s %(message)s'
     dateformat = '%Y-%m-%d %H:%M'
-    logging.basicConfig(level=logging.ERROR, format=infoformat,
-                        datefmt=dateformat)
+    if log_file_name is not None:
+        logging.basicConfig(level=logging.ERROR, format=infoformat, datefmt=dateformat,
+                            filename='{}.log'.format(log_file_name), filemode='w')
+    else:
+        logging.basicConfig(level=logging.ERROR, format=infoformat,
+                            datefmt=dateformat)
 
     if level not in {0, 1, 2, 3}:
         raise ValueError('Unknown verbose level %d' % level)

@@ -66,7 +66,14 @@ def find_match(cn_word, cn_edge_start_time, cn_edge_duration, lat_words, lat_edg
     # Return the index of the matching arc in the lattice
     return match
 
+def check_match_quality(lat_edge, lat_start_time, cn_edge, cn_start_time):
+    print(lat_edge)
+    print(cn_edge)
+    lat_end_time = lat_start_time + lat_edge[DURATION_IDX]
+    cn_end_time = cn_start_time + cn_edge[DURATION_IDX]
 
+    if abs(lat_start_time - cn_start_time) > 0.05 or abs(lat_end_time - cn_end_time) > 0.05:
+        LOGGER.info('Best case match is outside of the normal range:\nLattice start time: {} Lattice end time: {}\nConfnet start time: {} Confnet end time: {}'.format(lat_start_time, lat_end_time, cn_start_time, cn_end_time))
 
 def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am):
     print('Enriching: {}'.format(file_name))
@@ -117,6 +124,14 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am):
             )
         if lat_arc_idx >= 0:
             # For all arc indices which indicate a match in the lattice:
+
+            # Log warning if they barely match:
+            check_match_quality(
+                lat_edge=lat_edge[lat_arc_idx],
+                lat_start_time=lat_edge_start_times[lat_arc_idx],
+                cn_edge=cn_edge,
+                cn_start_time=cn_start_times[cn_edge_idx]
+            )
             # Adding grapheme level information if a matching arc was found
             new_cn_grapheme_data[cn_edge_idx] = lat_grapheme_data[lat_arc_idx]
             # Adding word level information

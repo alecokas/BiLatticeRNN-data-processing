@@ -97,19 +97,8 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am):
 
     new_cn_grapheme_data = np.empty((cn_edge_data.shape[0], lat_grapheme_data.shape[1], lat_grapheme_data.shape[2]))
 
-    # wordvec = load_wordvec('wordvec.npy')
-
     # For each arc in the confusion network
     for cn_edge_idx, cn_edge in enumerate(cn_edge_data):
-        # print(lat_edge[:, :WORD_EMBEDDING_LENGTH].shape)
-        # print(cn_edge.shape)
-        # found_flag = False
-        # for word, vec in wordvec.items():
-        #     if (vec == cn_edge[:WORD_EMBEDDING_LENGTH]).all():
-        #         print('CN word: {}'.format(word))
-        #         found_flag = True
-        # if not found_flag:
-        #     print('No word matches the embedding: {}'.format(cn_edge))
 
         cn_word_embedding = cn_edge[:WORD_EMBEDDING_LENGTH]
         if (cn_word_embedding == np.zeros_like(cn_word_embedding)).all():

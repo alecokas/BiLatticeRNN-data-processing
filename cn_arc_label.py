@@ -91,7 +91,7 @@ def label(lattice_path, stm_dir, dst_dir, baseline_dict, np_conf_dir, lev, thres
         prefix = name_parts[0]
         stm_file = os.path.join(stm_dir, prefix + '.npz')
         try:
-            stm = np.load(stm_file)
+            # stm = np.load(stm_file)
             start_frame = int(name_parts[-2])/100.
             
             if lev:

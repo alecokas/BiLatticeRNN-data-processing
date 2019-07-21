@@ -66,12 +66,12 @@ def find_match(cn_word, cn_edge_start_time, cn_edge_duration, lat_words, lat_edg
     # Return the index of the matching arc in the lattice
     return match
 
-def check_match_quality(lat_edge, lat_start_time, cn_edge, cn_start_time):
+def check_match_quality(lat_edge, lat_start_time, cn_edge, cn_start_time, cn_file_path):
     lat_end_time = lat_start_time + lat_edge[DURATION_IDX]
     cn_end_time = cn_start_time + cn_edge[DURATION_IDX]
 
     if abs(lat_start_time - cn_start_time) > 0.05 or abs(lat_end_time - cn_end_time) > 0.05:
-        LOGGER.info('Best case match is outside of the normal range:\nLattice start time: {} Lattice end time: {}\nConfnet start time: {} Confnet end time: {}'.format(lat_start_time, lat_end_time, cn_start_time, cn_end_time))
+        LOGGER.info('{}\nBest case match is outside of the normal range:\nLattice start time: {} Lattice end time: {}\nConfnet start time: {} Confnet end time: {}'.format(cn_file_path, lat_start_time, lat_end_time, cn_start_time, cn_end_time))
 
 def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am):
     print('Enriching: {}'.format(file_name))
@@ -128,7 +128,8 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am):
                 lat_edge=lat_edge[lat_arc_idx],
                 lat_start_time=lat_edge_start_times[lat_arc_idx],
                 cn_edge=cn_edge,
-                cn_start_time=cn_start_times[cn_edge_idx]
+                cn_start_time=cn_start_times[cn_edge_idx],
+                cn_file_path=cn_path
             )
             # Adding grapheme level information if a matching arc was found
             new_cn_grapheme_data[cn_edge_idx] = lat_grapheme_data[lat_arc_idx]
@@ -158,7 +159,6 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am):
                 ignore=lat['ignore'], grapheme_data=new_cn_grapheme_data, start_times=lat['start_times'])
     return success
 
-
 def main(args):
 
     global LOGGER
@@ -175,8 +175,7 @@ def main(args):
         success = enrich_cn(file_name, cn_path, lat_path, args.output_dir, args.lm, args.am)
         if not success:
             LOGGER.info('CN {} was not enriched'.format(cn_path))
-
-
+    LOGGER.info('================= Process complete =================')
 
 def parse_arguments(args_to_parse):
     """ Parse the command line arguments.

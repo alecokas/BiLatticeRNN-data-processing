@@ -35,7 +35,7 @@ def get_logger(level, log_file_name=None):
     dateformat = '%Y-%m-%d %H:%M'
     if log_file_name is not None:
         logging.basicConfig(level=logging.ERROR, format=infoformat, datefmt=dateformat,
-                            filename='{}.log'.format(log_file_name), filemode='w')
+                            filename='{}.log'.format(log_file_name), filemode='a+')
     else:
         logging.basicConfig(level=logging.ERROR, format=infoformat,
                             datefmt=dateformat)

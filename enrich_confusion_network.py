@@ -67,8 +67,6 @@ def find_match(cn_word, cn_edge_start_time, cn_edge_duration, lat_words, lat_edg
     return match
 
 def check_match_quality(lat_edge, lat_start_time, cn_edge, cn_start_time):
-    print(lat_edge)
-    print(cn_edge)
     lat_end_time = lat_start_time + lat_edge[DURATION_IDX]
     cn_end_time = cn_start_time + cn_edge[DURATION_IDX]
 

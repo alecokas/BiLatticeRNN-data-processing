@@ -254,7 +254,7 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
             ignore = []
             for i, edge in enumerate(edges):
                 start_node = edge[0]
-                start_times.append(start_node)
+                start_times.append(nodes[start_node][0])
                 end_node = edge[1]
                 time = nodes[end_node][0] - nodes[start_node][0]
                 word = nodes[end_node][1]

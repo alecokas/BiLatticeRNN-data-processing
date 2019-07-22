@@ -11,6 +11,7 @@ DURATION_IDX = 50
 AM_INDEX = 51
 LM_INDEX = 52
 POST_IDX = 53
+FRAME_PERIOD = 0.01
 
 
 def set_of_processed_file_names(directory_to_search, remove_extension=False, extension='.npz'):
@@ -72,8 +73,8 @@ def check_match_quality(lat_edge, lat_start_time, cn_edge, cn_start_time, cn_fil
     lat_end_time = lat_start_time + lat_edge[DURATION_IDX]
     cn_end_time = cn_start_time + cn_edge[DURATION_IDX]
 
-    if abs(lat_start_time - cn_start_time) > 0.05 or abs(lat_end_time - cn_end_time) > 0.05:
-        LOGGER.info('{}\nBest case match is outside of the normal range:\nLattice start time: {} Lattice end time: {}\nConfnet start time: {} Confnet end time: {}'.format(cn_file_path, lat_start_time, lat_end_time, cn_start_time, cn_end_time))
+    if abs(lat_start_time - cn_start_time) > FRAME_PERIOD * 5 or abs(lat_end_time - cn_end_time) > FRAME_PERIOD * 5:
+        LOGGER.info('{}\n\t\t\t\t\t\t Lattice start time: {} Lattice end time: {}\n\t\t\t\t\t\t Confnet start time: {} Confnet end time: {}'.format(cn_file_path, lat_start_time, lat_end_time, cn_start_time, cn_end_time))
 
 def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, wordvec=None):
     print('Enriching: {}'.format(file_name))
@@ -162,7 +163,7 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
         else:
             # Break and flag the lattice as not enriched
             success = False
-            break
+            # break
 
     # save multiple variables into one .npz file
     full_file_path = os.path.join(output_dir, file_name)
@@ -176,6 +177,7 @@ def main(args):
 
     global LOGGER
     LOGGER = utils.get_logger(args.verbose, log_file_name=os.path.join(args.output_dir, 'enrich_cn'))
+    LOGGER.info('================= Process Start =================')
 
     cn_set = set_of_processed_file_names(directory_to_search=args.confusion_network_dir)
     lat_set = set_of_processed_file_names(directory_to_search=args.lattice_dir)

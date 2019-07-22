@@ -13,11 +13,13 @@ LM_INDEX = 52
 POST_IDX = 53
 
 
-def set_of_processed_file_names(directory_to_search):
+def set_of_processed_file_names(directory_to_search, remove_extension=False, extension='.npz'):
     processed_names = set()
     for _, _, names in os.walk(directory_to_search):
         for name in names:
-            if name.endswith('.npz'):
+            if name.endswith(extension):
+                if remove_extension:
+                    name = name[:-len(extension)]
                 processed_names.add(name)
     return processed_names
 

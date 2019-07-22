@@ -191,6 +191,7 @@ def main():
     utils.mkdir(dst_dir)
     baseline_dict = load_baseline(args.one_best)
 
+    # TODO: This will not iterate all 3 subsets - fix
     subset_list = ['train.txt', 'cv.txt', 'test.txt']
     for subset in subset_list:
         file_list = os.path.join(args.file_list_dir, subset)

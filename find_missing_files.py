@@ -5,7 +5,8 @@ import sys
 
 def files_to_search_for(file_name):
     with open(file_name, 'r') as list_file:
-        return list_file.readlines()
+        content_list = list_file.readlines()
+        return [elem.strip() for elem in content_list]
 
 def main(args):
     files_in_dir = set_of_processed_file_names(
@@ -20,8 +21,8 @@ def main(args):
         if not query_file in files_in_dir:
             missing_files.append(query_file)
 
-    with open(args.output_file) as out_file:
-        out_file.write('/n'.join(missing_files))
+    with open(args.output_file, 'w') as out_file:
+        out_file.write('\n'.join(missing_files))
 
 def parse_arguments(args_to_parse):
     """ Parse the command line arguments.

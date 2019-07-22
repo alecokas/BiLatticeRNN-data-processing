@@ -73,7 +73,7 @@ def check_match_quality(lat_edge, lat_start_time, cn_edge, cn_start_time, cn_fil
     if abs(lat_start_time - cn_start_time) > 0.05 or abs(lat_end_time - cn_end_time) > 0.05:
         LOGGER.info('{}\nBest case match is outside of the normal range:\nLattice start time: {} Lattice end time: {}\nConfnet start time: {} Confnet end time: {}'.format(cn_file_path, lat_start_time, lat_end_time, cn_start_time, cn_end_time))
 
-def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am):
+def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, wordvec=None):
     print('Enriching: {}'.format(file_name))
     success = True
     # For each edge in the confusion network, the following information is contained:
@@ -104,13 +104,24 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am):
 
     # For each arc in the confusion network
     for cn_edge_idx, cn_edge in enumerate(cn_edge_data):
-
         cn_word_embedding = cn_edge[:WORD_EMBEDDING_LENGTH]
+
         if (cn_word_embedding == np.zeros_like(cn_word_embedding)).all():
             # A zero array means that the CN edge is for the !NULL arc
             # This is ignored anyway so just fill with zeros as required
             lat_arc_idx = -2
         else:
+            # Debug operations
+            if wordvec is not None:
+                found_flag = False
+                for word, vec in wordvec.items():
+                    if (vec == cn_word_embedding).all():
+                        print('CN word: {}'.format(word))
+                        found_flag = True
+                        break
+                if not found_flag:
+                    print('No word matches the embedding: {}'.format(cn_edge))
+
             lat_arc_idx = find_match(
                 cn_word=cn_word_embedding,
                 cn_edge_start_time=cn_start_times[cn_edge_idx],
@@ -167,12 +178,17 @@ def main(args):
     cn_set = set_of_processed_file_names(directory_to_search=args.confusion_network_dir)
     lat_set = set_of_processed_file_names(directory_to_search=args.lattice_dir)
 
+    if args.debug_mode:
+        wordvec = np.load('wordvec.npy').item()
+    else:
+        wordvec = None
+
     for file_name in cn_set:
         if file_name not in lat_set:
             raise Exception('No matching lattice for the confusion network file {}'.format(file_name))
         lat_path = os.path.join(args.lattice_dir, file_name)
         cn_path = os.path.join(args.confusion_network_dir, file_name)
-        success = enrich_cn(file_name, cn_path, lat_path, args.output_dir, args.lm, args.am)
+        success = enrich_cn(file_name, cn_path, lat_path, args.output_dir, args.lm, args.am, wordvec)
         if not success:
             LOGGER.info('CN {} was not enriched'.format(cn_path))
     LOGGER.info('================= Process complete =================')
@@ -203,6 +219,10 @@ def parse_arguments(args_to_parse):
     parser.add_argument(
         '--AM', dest='am', action='store_true', default=False,
         help='Include the acoustic model score on the confusion network arc'
+    )
+    parser.add_argument(
+        '--debug', dest='debug_mode', action='store_true', default=False,
+        help='Run in debug mode - print the word on each arc'
     )
     parser.add_argument(
         '-v', '--verbose',

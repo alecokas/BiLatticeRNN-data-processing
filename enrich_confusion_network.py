@@ -76,7 +76,7 @@ def check_match_quality(lat_edge, lat_start_time, cn_edge, cn_start_time, cn_fil
     if abs(lat_start_time - cn_start_time) > FRAME_PERIOD * 5 or abs(lat_end_time - cn_end_time) > FRAME_PERIOD * 5:
         LOGGER.info('{}\n\t\t\t\t\t\t Lattice start time: {} Lattice end time: {}\n\t\t\t\t\t\t Confnet start time: {} Confnet end time: {}'.format(cn_file_path, lat_start_time, lat_end_time, cn_start_time, cn_end_time))
 
-def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, wordvec=None):
+def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, grapheme, wordvec=None):
     print('Enriching: {}'.format(file_name))
     success = True
     # For each edge in the confusion network, the following information is contained:
@@ -103,7 +103,14 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
         new_cn_edge_data = cn_edge_data
         update_cn_edge_data = False
 
-    new_cn_grapheme_data = np.empty((cn_edge_data.shape[0], lat_grapheme_data.shape[1], lat_grapheme_data.shape[2]))
+    if grapheme:
+        if 'grapheme_data' in cn.keys():
+            raise Exception('The source lattices already contain grapheme information')
+        new_cn_grapheme_data = np.empty((cn_edge_data.shape[0], lat_grapheme_data.shape[1], lat_grapheme_data.shape[2]))
+    elif 'grapheme_data' in cn.keys():
+        new_cn_grapheme_data = cn['grapheme_data']
+    else:
+        new_cn_grapheme_data = None
 
     # For each arc in the confusion network
     for cn_edge_idx, cn_edge in enumerate(cn_edge_data):
@@ -145,8 +152,11 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
                 cn_start_time=cn_start_times[cn_edge_idx],
                 cn_file_path=cn_path
             )
+
             # Adding grapheme level information if a matching arc was found
-            new_cn_grapheme_data[cn_edge_idx] = lat_grapheme_data[lat_arc_idx]
+            if grapheme:
+                new_cn_grapheme_data[cn_edge_idx] = lat_grapheme_data[lat_arc_idx]
+
             # Adding word level information
             if update_cn_edge_data:
                 new_features = []
@@ -154,12 +164,13 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
                     new_features.append(lat_edge[lat_arc_idx, AM_INDEX])
                 if include_lm:
                     new_features.append(lat_edge[lat_arc_idx, LM_INDEX])
-                new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge, np.array(new_features)), axis=1)
+                new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge, np.array(new_features)), axis=0)
         elif lat_arc_idx == -2:
-            new_cn_grapheme_data[cn_edge_idx] = np.zeros_like(lat_grapheme_data[0])
+            if grapheme:
+                new_cn_grapheme_data[cn_edge_idx] = np.zeros_like(lat_grapheme_data[0])
             if update_cn_edge_data:
                 new_features = [0] * num_added_features(include_am, include_lm)
-                new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge, np.array(new_features)), axis=1)
+                new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge, np.array(new_features)), axis=0)
         else:
             # Break and flag the lattice as not enriched
             success = False
@@ -168,9 +179,14 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
     # save multiple variables into one .npz file
     full_file_path = os.path.join(output_dir, file_name)
     if success:
-        np.savez(full_file_path, topo_order=lat['topo_order'], child_2_parent=lat['child_2_parent'],
-                parent_2_child=lat['parent_2_child'], edge_data=new_cn_edge_data,
-                ignore=lat['ignore'], grapheme_data=new_cn_grapheme_data, start_times=lat['start_times'])
+        if new_cn_grapheme_data is not None:
+            np.savez(full_file_path, topo_order=lat['topo_order'], child_2_parent=lat['child_2_parent'],
+                    parent_2_child=lat['parent_2_child'], edge_data=new_cn_edge_data,
+                    ignore=lat['ignore'], grapheme_data=new_cn_grapheme_data, start_times=lat['start_times'])
+        else:
+            np.savez(full_file_path, topo_order=lat['topo_order'], child_2_parent=lat['child_2_parent'],
+                    parent_2_child=lat['parent_2_child'], edge_data=new_cn_edge_data,
+                    ignore=lat['ignore'], start_times=lat['start_times'])
     return success
 
 def main(args):
@@ -178,6 +194,9 @@ def main(args):
     global LOGGER
     LOGGER = utils.get_logger(args.verbose, log_file_name=os.path.join(args.output_dir, 'enrich_cn'))
     LOGGER.info('================= Process Start =================')
+
+    if not args.lm and not args.am and not args.grapheme:
+        raise Exception('Nothing to enrich - ensure that you have set sensible CLI arguments') 
 
     cn_set = set_of_processed_file_names(directory_to_search=args.confusion_network_dir)
     lat_set = set_of_processed_file_names(directory_to_search=args.lattice_dir)
@@ -192,7 +211,7 @@ def main(args):
             raise Exception('No matching lattice for the confusion network file {}'.format(file_name))
         lat_path = os.path.join(args.lattice_dir, file_name)
         cn_path = os.path.join(args.confusion_network_dir, file_name)
-        success = enrich_cn(file_name, cn_path, lat_path, args.output_dir, args.lm, args.am, wordvec)
+        success = enrich_cn(file_name, cn_path, lat_path, args.output_dir, args.lm, args.am, args.grapheme, wordvec)
         if not success:
             LOGGER.info('CN {} was not enriched'.format(cn_path))
     LOGGER.info('================= Process complete =================')
@@ -223,6 +242,10 @@ def parse_arguments(args_to_parse):
     parser.add_argument(
         '--AM', dest='am', action='store_true', default=False,
         help='Include the acoustic model score on the confusion network arc'
+    )
+    parser.add_argument(
+        '--grapheme', dest='grapheme', action='store_true', default=False,
+        help='Include the grapheme information on the confusion network arc'
     )
     parser.add_argument(
         '--debug', dest='debug_mode', action='store_true', default=False,

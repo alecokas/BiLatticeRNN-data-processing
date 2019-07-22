@@ -134,6 +134,7 @@ class CN:
                     grapheme_feature_array = get_grapheme_info(self.cn_arcs[i][4], subword_embedding)
                     grapheme_data.append(grapheme_feature_array)
 
+        npz_file_name = os.path.join(dst_dir, self.name + '.npz')
         if self.has_graphemes:
             # go through the array now and put it in a big masked array so it is just ine simple numpy array (I, J, F)
             max_grapheme_seq_length = longest_grapheme_sequence(grapheme_data)
@@ -144,14 +145,16 @@ class CN:
                 padded_grapheme_data[arc_num, :, :], mask[arc_num, :, :] = pad_subword_sequence(grapheme_seq, max_grapheme_seq_length)
 
             masked_grapheme_data = ma.masked_array(padded_grapheme_data, mask=mask, fill_value=-999999)
+            np.savez(npz_file_name,
+                    topo_order=topo_order, child_2_parent=child_2_parent,
+                    parent_2_child=parent_2_child, edge_data=np.asarray(edge_data),
+                    ignore=ignore, grapheme_data=masked_grapheme_data, start_times=start_times)
         else:
-            masked_grapheme_data = None
+            np.savez(npz_file_name,
+                    topo_order=topo_order, child_2_parent=child_2_parent,
+                    parent_2_child=parent_2_child, edge_data=np.asarray(edge_data),
+                    ignore=ignore, start_times=start_times)
 
-        npz_file_name = os.path.join(dst_dir, self.name + '.npz')
-        np.savez(npz_file_name,
-                 topo_order=topo_order, child_2_parent=child_2_parent,
-                 parent_2_child=parent_2_child, edge_data=np.asarray(edge_data),
-                 ignore=ignore, grapheme_data=masked_grapheme_data, start_times=start_times)
         if processed_file_list_path is not None:
             append_path_to_txt(os.path.abspath(npz_file_name), processed_file_list_path)
 

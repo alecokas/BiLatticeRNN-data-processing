@@ -191,15 +191,16 @@ def main():
     utils.mkdir(dst_dir)
     baseline_dict = load_baseline(args.one_best)
 
-    # TODO: This will not iterate all 3 subsets - fix
-    subset_list = ['train.txt', 'cv.txt', 'test.txt']
+    file_list = []
+    subset_list = ['train.lat.txt', 'cv.lat.txt', 'test.lat.txt']
     for subset in subset_list:
-        file_list = os.path.join(args.file_list_dir, subset)
+        file_list.append(os.path.join(args.file_list_dir, subset))
 
     lattice_list = []
-    with open(os.path.abspath(file_list), 'r') as file_in:
-        for path_to_lat in file_in:
-            lattice_list.append(path_to_lat.strip())
+    for lat_subset_file in file_list:
+        with open(os.path.abspath(lat_subset_file), 'r') as file_in:
+            for path_to_lat in file_in:
+                lattice_list.append(path_to_lat.strip())
 
     with Pool(args.num_threads) as pool:
         pool.starmap(label, zip(lattice_list, repeat(args.stm_dir), repeat(dst_dir),

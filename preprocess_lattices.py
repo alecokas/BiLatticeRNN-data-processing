@@ -87,13 +87,17 @@ def read_lattice(lattice_path, subword_embedding=None):
                 post_idx = 6
             else:
                 post_idx = 5
-            if line[post_idx].split('=')[0] == 'p':
-                # Expect posterior information
-                post = float(line[post_idx].split('=')[1])
-            else:
-                raise Exception('This lattice ({}) has an unrecognised arc parameter sequence'.format(lattice_path))
 
-            edges.append([parent, child, am_score, lm_score, post])
+            if len(line) < post_idx + 1:
+                if line[post_idx].split('=')[0] == 'p':
+                    # Expect posterior information
+                    post = float(line[post_idx].split('=')[1])
+                else:
+                    raise Exception('This lattice ({}) has an unrecognised arc parameter sequence'.format(lattice_path))
+
+                edges.append([parent, child, am_score, lm_score, post])
+            else:
+                edges.append([parent, child, am_score, lm_score])
 
             if child not in dependency:
                 dependency[child] = {parent}

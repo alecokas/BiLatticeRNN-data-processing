@@ -1,6 +1,6 @@
 import argparse
-import matplotlib
-matplotlib.use('Agg')
+# import matplotlib
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -61,6 +61,7 @@ def save_statistics(error_array, target_file_name):
     error_type = ['Start Time', 'End Time', 'Duration']
 
     for errors, error_type in zip(error_array, error_type):
+        errors = list(filter(lambda a: a != 0, errors))
         stats_dict[error_type] = stats.describe(errors)
 
     # Write 
@@ -72,6 +73,7 @@ def plot_distributions(error_array, directory):
     error_type = ['Start Time', 'End Time', 'Duration']
     for i, (errors, error_type) in enumerate(zip(error_array, error_type)):
         print(errors)
+        errors = list(filter(lambda a: a != 0, errors))
         fig = plt.figure()
         n, bins, patches = plt.hist(x=errors, bins='auto', color='#0504aa',
                                     alpha=0.7, rwidth=0.85, density=True)
@@ -82,7 +84,8 @@ def plot_distributions(error_array, directory):
         # Set a clean upper y-axis limit.
         plt.ylim(ymax=np.max(n))
         file_name = os.path.join(directory, 'distribution-{}'.format(i))
-        plt.savefig(file_name, dpi=fig.dpi)
+        # plt.savefig(file_name, dpi=fig.dpi)
+        plt.show()
 
 def main(args):
 

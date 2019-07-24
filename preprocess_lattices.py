@@ -88,7 +88,7 @@ def read_lattice(lattice_path, subword_embedding=None):
             else:
                 post_idx = 5
 
-            if len(line) < post_idx + 1:
+            if len(line) >= post_idx + 1:
                 if line[post_idx].split('=')[0] == 'p':
                     # Expect posterior information
                     post = float(line[post_idx].split('=')[1])

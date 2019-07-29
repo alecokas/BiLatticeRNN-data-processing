@@ -78,10 +78,9 @@ def plot_distributions(error_array, directory):
         n, bins, patches = plt.hist(x=errors, bins='auto', color='#0504aa',
                                     alpha=0.7, rwidth=0.85, density=True)
         plt.grid(axis='y', alpha=0.75)
-        plt.xlabel('Error')
-        plt.ylabel('Normalised Probability Mass Error')
+        plt.xlabel('Euclidean Norm Error')
+        plt.ylabel('Normalised Probability Mass')
         plt.title('Empirical Probability Mass Distribution of the {} errors'.format(error_type))
-        # Set a clean upper y-axis limit.
         plt.ylim(ymax=np.max(n))
         file_name = os.path.join(directory, 'distribution-{}'.format(i))
         # plt.savefig(file_name, dpi=fig.dpi)

@@ -32,7 +32,7 @@ def parse_arguments(args_to_parse):
 
     parser.add_argument(
         '-l', '--list-file', type=str, required=True,
-        help='A file with a list of names to check.'
+        help='A file with a list of names to check (*.lst).'
     )
     parser.add_argument(
         '-d', '--directory-to-search', type=str, required=True,

@@ -26,20 +26,37 @@ def grapheme_counts():
 def grapheme_durations():
     pass
 
+
+
 def get_grapheme_info(processed_dir):
-    for root, dirs, names in os.walk(processed_dir):
+
+    grapheme_dict = {}
+
+    for root, _, names in os.walk(processed_dir):
         for name in names:
             if name.endswith('.npz'):
                 file_name = os.path.join(root, name)
                 processed_file = np.load(file_name)
                 grapheme_array = processed_file['grapheme_data']
-                print(grapheme_array.shape)
-                print(grapheme_array[0])
-                break
+
+                for arc in grapheme_array:
+                    clearn_arc = arc[~np.all(arc == 0, axis=1)]
+
+                    for grapheme in arc:
+                        grapheme_embedding = grapheme[:-1]
+                        grapheme_dur = grapheme[-1]
+                        if not grapheme_embedding in grapheme_dict.keys():
+                            grapheme_dict[grapheme_embedding] = [grapheme_dur]
+                        else:
+                            grapheme_dict[grapheme_embedding].append(grapheme_dur)
+
+                        print(grapheme_dict)
+                        print(clearn_arc)
+                        return
 
 def main(args):
-    model_path = os.path.join(args.exp_model_dir, 'model_best.pth')
-    optim_path = os.path.join(args.exp_model_dir, 'best.pth')
+    # model_path = os.path.join(args.exp_model_dir, 'model_best.pth')
+    # optim_path = os.path.join(args.exp_model_dir, 'best.pth')
     # load_A_matrix(model_path, optim_path)
 
     get_grapheme_info(args.processed_dir)

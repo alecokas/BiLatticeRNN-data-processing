@@ -32,12 +32,20 @@ def num_added_features(include_am, include_lm):
         added_feature_count += 1
     return added_feature_count
 
-def cost_fn(x1_start_time, x1_dur, x2_start_time, x2_dur):
+def cost_fn(x1_start_time, x1_dur, x2_start_time, x2_dur, max_time_diff):
     x1_end_time = x1_start_time + x1_dur
     x2_end_time = x2_start_time + x2_dur
-    return math.sqrt((x1_start_time - x2_start_time) ** 2 + (x1_end_time - x2_end_time) ** 2)
 
-def find_match(cn_word, cn_edge_start_time, cn_edge_duration, lat_words, lat_edge_start_times, lat_edge_durations, lat_posteriors):
+    start_time_diff = x1_start_time - x2_start_time
+    end_time_diff = x1_end_time - x2_end_time
+
+    if start_time_diff > max_time_diff or end_time_diff > max_time_diff:
+        # disquality all arcs where the start or end time difference is greater than a second
+        return -1
+
+    return math.sqrt((start_time_diff) ** 2 + (end_time_diff) ** 2)
+
+def find_match(cn_word, cn_edge_start_time, cn_edge_duration, lat_words, lat_edge_start_times, lat_edge_durations, lat_posteriors, max_time_diff):
     """ Iterate each arc in the lattice and find the arc which corresponds to the confusion network arc.
         Returning an arc index of -1 indicates that no matches were found.
     """
@@ -46,7 +54,7 @@ def find_match(cn_word, cn_edge_start_time, cn_edge_duration, lat_words, lat_edg
     for lat_arc_idx, lat_word in enumerate(lat_words):
         # Check that the words match
         if (cn_word == lat_word).all():
-            cost = cost_fn(cn_edge_start_time, cn_edge_duration, lat_edge_start_times[lat_arc_idx], lat_edge_durations[lat_arc_idx])
+            cost = cost_fn(cn_edge_start_time, cn_edge_duration, lat_edge_start_times[lat_arc_idx], lat_edge_durations[lat_arc_idx], max_time_diff)
             if cost >= 0 and cost <= min_cost:
                 if cost == min_cost:
                     candidate_list.append((lat_arc_idx, cost, lat_posteriors[lat_arc_idx]))
@@ -76,7 +84,7 @@ def check_match_quality(lat_edge, lat_start_time, cn_edge, cn_start_time, cn_fil
     if abs(lat_start_time - cn_start_time) > FRAME_PERIOD * 5 or abs(lat_end_time - cn_end_time) > FRAME_PERIOD * 5:
         LOGGER.info('{}\n\t\t\t\t\t\t Lattice start time: {} Lattice end time: {}\n\t\t\t\t\t\t Confnet start time: {} Confnet end time: {}'.format(cn_file_path, lat_start_time, lat_end_time, cn_start_time, cn_end_time))
 
-def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, grapheme, wordvec=None):
+def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, grapheme, wordvec=None, time_threshold=1):
     print('Enriching: {}'.format(file_name))
     success = True
     # For each edge in the confusion network, the following information is contained:
@@ -139,7 +147,8 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
                 lat_words=lat_edge[:, :WORD_EMBEDDING_LENGTH],
                 lat_edge_start_times=lat_edge_start_times,
                 lat_edge_durations=lat_edge[:, DURATION_IDX],
-                lat_posteriors=lat_edge[:, POST_IDX]
+                lat_posteriors=lat_edge[:, POST_IDX],
+                max_time_diff = time_threshold
             )
         if lat_arc_idx >= 0:
             # For all arc indices which indicate a match in the lattice:
@@ -211,7 +220,7 @@ def main(args):
             raise Exception('No matching lattice for the confusion network file {}'.format(file_name))
         lat_path = os.path.join(args.lattice_dir, file_name)
         cn_path = os.path.join(args.confusion_network_dir, file_name)
-        success = enrich_cn(file_name, cn_path, lat_path, args.output_dir, args.lm, args.am, args.grapheme, wordvec)
+        success = enrich_cn(file_name, cn_path, lat_path, args.output_dir, args.lm, args.am, args.grapheme, wordvec, args.time_threshold)
         if not success:
             LOGGER.info('CN {} was not enriched'.format(cn_path))
     LOGGER.info('================= Process complete =================')
@@ -246,6 +255,10 @@ def parse_arguments(args_to_parse):
     parser.add_argument(
         '--grapheme', dest='grapheme', action='store_true', default=False,
         help='Include the grapheme information on the confusion network arc'
+    )
+    parser.add_argument(
+        '-', '--time-threshold', type=float, default=1,
+        help='The maximum acceptable error to match arcs'
     )
     parser.add_argument(
         '--debug', dest='debug_mode', action='store_true', default=False,

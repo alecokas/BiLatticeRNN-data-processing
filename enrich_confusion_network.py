@@ -39,8 +39,8 @@ def cost_fn(x1_start_time, x1_dur, x2_start_time, x2_dur, max_time_diff):
     start_time_diff = abs(x1_start_time - x2_start_time)
     end_time_diff = abs(x1_end_time - x2_end_time)
 
-    if start_time_diff > max_time_diff or end_time_diff > max_time_diff:
-        # disquality all arcs where the start or end time difference is greater than a second
+    if start_time_diff > max_time_diff and end_time_diff > max_time_diff:
+        # disquality all arcs where the start and end time difference is greater than a max_time_diff
         return -1
 
     return math.sqrt((start_time_diff) ** 2 + (end_time_diff) ** 2)

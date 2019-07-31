@@ -187,13 +187,13 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
     full_file_path = os.path.join(output_dir, file_name)
     if success:
         if new_cn_grapheme_data is not None:
-            np.savez(full_file_path, topo_order=lat['topo_order'], child_2_parent=lat['child_2_parent'],
-                    parent_2_child=lat['parent_2_child'], edge_data=new_cn_edge_data,
-                    ignore=lat['ignore'], grapheme_data=new_cn_grapheme_data, start_times=lat['start_times'])
+            np.savez(full_file_path, topo_order=cn['topo_order'], child_2_parent=cn['child_2_parent'],
+                    parent_2_child=cn['parent_2_child'], edge_data=new_cn_edge_data,
+                    ignore=cn['ignore'], grapheme_data=new_cn_grapheme_data, start_times=cn['start_times'])
         else:
-            np.savez(full_file_path, topo_order=lat['topo_order'], child_2_parent=lat['child_2_parent'],
-                    parent_2_child=lat['parent_2_child'], edge_data=new_cn_edge_data,
-                    ignore=lat['ignore'], start_times=lat['start_times'])
+            np.savez(full_file_path, topo_order=cn['topo_order'], child_2_parent=cn['child_2_parent'],
+                    parent_2_child=cn['parent_2_child'], edge_data=new_cn_edge_data,
+                    ignore=cn['ignore'], start_times=cn['start_times'])
     return success
 
 def main(args):

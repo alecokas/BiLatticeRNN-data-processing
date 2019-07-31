@@ -114,7 +114,7 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
 
     if grapheme:
         if 'grapheme_data' in cn.keys():
-            if cn['grapheme_data'] is not None:
+            if not (cn['grapheme_data'].any() == None):
                 raise Exception('The source lattices already contain grapheme information')
         new_cn_grapheme_data = np.empty((cn_edge_data.shape[0], lat_grapheme_data.shape[1], lat_grapheme_data.shape[2]))
     elif 'grapheme_data' in cn.keys():

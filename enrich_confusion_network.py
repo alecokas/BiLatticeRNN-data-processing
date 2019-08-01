@@ -39,12 +39,13 @@ def cost_fn(x1_start_time, x1_dur, x2_start_time, x2_dur, max_time_diff):
 
     start_time_diff = abs(x1_start_time - x2_start_time)
     end_time_diff = abs(x1_end_time - x2_end_time)
+    dur_diff = abs(x1_dur - x2_dur)
 
     if start_time_diff > max_time_diff and end_time_diff > max_time_diff:
         # disquality all arcs where the start and end time difference is greater than a max_time_diff
         return -1
 
-    return math.sqrt((start_time_diff) ** 2 + (end_time_diff) ** 2)
+    return math.sqrt((start_time_diff ** 2) + (end_time_diff ** 2) + (dur_diff ** 2))
 
 def find_match(cn_word_emb, cn_word, cn_edge_start_time, cn_edge_duration, lat_words, lat_edge_start_times, lat_edge_durations, lat_posteriors, max_time_diff):
     """ Iterate each arc in the lattice and find the arc which corresponds to the confusion network arc.

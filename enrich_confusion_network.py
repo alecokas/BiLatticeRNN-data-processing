@@ -9,6 +9,7 @@ import utils
 
 WORD_EMBEDDING_LENGTH = 50
 DURATION_IDX = 50
+OLD_POST_IDX = 51
 AM_INDEX = 51
 LM_INDEX = 52
 POST_IDX = 53
@@ -107,6 +108,7 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
     # Only need to iteratively update new_cn_edge_data if we are adding features
     added_feature_count = num_added_features(include_am, include_lm)
     if added_feature_count > 0:
+        print(cn_edge_data.shape[1])
         new_cn_edge_data = np.empty((cn_edge_data.shape[0], cn_edge_data.shape[1] + added_feature_count))
         update_cn_edge_data = True
     else:
@@ -116,7 +118,8 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
     if grapheme:
         if 'grapheme_data' in cn.keys():
             if not (cn['grapheme_data'].any() == None):
-                raise Exception('The source lattices already contain grapheme information')
+                print('Warning: The source lattices already contain grapheme information - Overwiriting')
+                LOGGER.info('Warning: The source lattices already contain grapheme information - Overwiriting')
         new_cn_grapheme_data = np.empty((cn_edge_data.shape[0], lat_grapheme_data.shape[1], lat_grapheme_data.shape[2]))
     elif 'grapheme_data' in cn.keys():
         new_cn_grapheme_data = cn['grapheme_data']
@@ -172,13 +175,15 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
                     new_features.append(lat_edge[lat_arc_idx, AM_INDEX])
                 if include_lm:
                     new_features.append(lat_edge[lat_arc_idx, LM_INDEX])
-                new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge, np.array(new_features)), axis=0)
+                    # Join the Confnet word vector, the duration from the lattice, and any new features
+                new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge[:DURATION_IDX], np.array([lat_edge[lat_arc_idx, DURATION_IDX], cn_edge[OLD_POST_IDX]]), np.array(new_features)), axis=0)
         elif lat_arc_idx == -2:
             if grapheme:
                 new_cn_grapheme_data[cn_edge_idx] = np.zeros_like(lat_grapheme_data[0])
             if update_cn_edge_data:
                 new_features = [0] * num_added_features(include_am, include_lm)
-                new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge, np.array(new_features)), axis=0)
+                # A row of zeros
+                new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge[:DURATION_IDX + 2], np.array(new_features)), axis=0)
         else:
             # Break and flag the lattice as not enriched
             success = False

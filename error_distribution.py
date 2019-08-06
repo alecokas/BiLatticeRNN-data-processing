@@ -69,18 +69,27 @@ def save_statistics(error_array, target_file_name):
     with open(target_file_name + '.pickle', 'wb') as tgt_file:
             pickle.dump(stats_dict, tgt_file, protocol=pickle.HIGHEST_PROTOCOL)
 
+def remove_outliers(error_list):
+    mean = np.mean(np.array(error_list), axis=0)
+    std = np.std(np.array(error_list), axis=0)
+
+    error_list = [x for x in error_list if (x > mean - 2 * std)]
+    error_list = [x for x in error_list if (x < mean + 2 * std)]
+    return error_list
+
 def plot_distributions(error_array, directory):
+    """ Generate plots for the empirical probability mass distribution of the start, end, and duration times. """
     error_type = ['Start Time', 'End Time', 'Duration']
     for i, (errors, error_type) in enumerate(zip(error_array, error_type)):
         print(errors)
         errors = list(filter(lambda a: a != 0, errors))
         fig = plt.figure()
+        errors = remove_outliers(errors)
         n, bins, patches = plt.hist(x=errors, bins='auto', color='#0504aa',
                                     alpha=0.7, rwidth=0.85, density=True)
         plt.grid(axis='y', alpha=0.75)
-        plt.xlabel('Euclidean Norm Error')
-        plt.ylabel('Normalised Probability Mass')
-        plt.title('Empirical Probability Mass Distribution of the {} errors'.format(error_type))
+        plt.xlabel('Time Difference (s)', fontsize=14)
+        plt.ylabel('Normalised Probability Mass',  fontsize=14)
         plt.ylim(ymax=np.max(n))
         file_name = os.path.join(directory, 'distribution-{}'.format(i))
         # plt.savefig(file_name, dpi=fig.dpi)

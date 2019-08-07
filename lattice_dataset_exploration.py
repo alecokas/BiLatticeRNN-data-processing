@@ -100,6 +100,16 @@ def target_counts(targets_path):
     competing_ones = num_ones - onebest_ones
     return num_zeros, num_ones, onebest_zeros, onebest_ones, competing_zeros, competing_ones
 
+def plot_distributions(array, file_name):
+    """ Generate plots for the empirical probability mass distribution of the start, end, and duration times. """
+    fig = plt.figure()
+    n, bins, patches = plt.hist(x=array, bins='auto', color='#0504aa',
+                                alpha=0.7, rwidth=0.85, density=True)
+    plt.grid(axis='y', alpha=0.75)
+    plt.ylim(ymax=np.max(n))
+    plt.savefig(file_name, dpi=fig.dpi)
+    # plt.show()
+
 def dataset_balance(targets_dir):
     """ For each lattice in the dataset, find the number of edges
         tagged with a confidence of one and the number of edges tagged
@@ -155,31 +165,37 @@ def dataset_balance(targets_dir):
         bins=np.arange(np.max(dataset_balance_dict['positive-tags-per-lattice']) + 1),
         density=True
     )
+    plot_distributions(dataset_balance_dict['positive-tags-per-lattice'], 'positive-tags-per-lattice')
     dataset_balance_dict['total-pmf-neg'] = np.histogram(
         dataset_balance_dict['negative-tags-per-lattice'],
         bins=np.arange(np.max(dataset_balance_dict['negative-tags-per-lattice']) + 1),
         density=True
     )
+    plot_distributions(dataset_balance_dict['negative-tags-per-lattice'], 'negative-tags-per-lattice')
     onebest_balance_dict['onebest-pmf-pos'] = np.histogram(
         onebest_balance_dict['positive-onebest-tags-per-lattice'],
         bins=np.arange(np.max(onebest_balance_dict['positive-onebest-tags-per-lattice']) + 1),
         density=True
     )
+    plot_distributions(dataset_balance_dict['onebest-pmf-pos'], 'nonebest-pmf-pos')
     onebest_balance_dict['onebest-pmf-neg'] = np.histogram(
         onebest_balance_dict['negative-onebest-tags-per-lattice'],
         bins=np.arange(np.max(onebest_balance_dict['negative-onebest-tags-per-lattice']) + 1),
         density=True
     )
+    plot_distributions(dataset_balance_dict['onebest-pmf-neg'], 'nonebest-pmf-neg')
     competing_balance_dict['competing-pmf-pos'] = np.histogram(
         competing_balance_dict['positive-competing-tags-per-lattice'],
         bins=np.arange(np.max(competing_balance_dict['positive-competing-tags-per-lattice']) + 1),
         density=True
     )
+    plot_distributions(dataset_balance_dict['competing-pmf-pos'], 'competing-pmf-pos')
     competing_balance_dict['competing-pmf-neg'] = np.histogram(
         competing_balance_dict['negative-competing-tags-per-lattice'],
         bins=np.arange(np.max(competing_balance_dict['negative-competing-tags-per-lattice']) + 1),
         density=True
     )
+    plot_distributions(dataset_balance_dict['competing-pmf-neg'], 'competing-pmf-neg')
     return dataset_balance_dict, onebest_balance_dict, competing_balance_dict
 
 def read_pickle(file_name):
@@ -236,7 +252,7 @@ def visualise(stats, pickle_name):
     )
 
 def histogram_image(hist, bin_edges, file_name):
-    plt.bar(bin_edges[:-1], hist, width=1)
+    plt.bar(bin_edges[:-1], hist, width=1, color='r')
     plt.xlim(min(bin_edges), max(bin_edges))
     plt.savefig(file_name)
 

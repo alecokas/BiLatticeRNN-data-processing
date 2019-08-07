@@ -175,7 +175,9 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
                 if include_lm:
                     new_features.append(lat_edge[lat_arc_idx, LM_INDEX])
                     # Join the Confnet word vector, the duration from the lattice, and any new features
-                new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge[:DURATION_IDX], np.array([lat_edge[lat_arc_idx, DURATION_IDX], cn_edge[OLD_POST_IDX]]), np.array(new_features)), axis=0)
+                    # TODO: Untested since I swaped the order that they are stored (see comment below)
+                # new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge[:DURATION_IDX], np.array([lat_edge[lat_arc_idx, DURATION_IDX], cn_edge[OLD_POST_IDX]]), np.array(new_features)), axis=0)
+                new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge[:DURATION_IDX], np.array(lat_edge[lat_arc_idx, DURATION_IDX]), np.array(new_features), np.array(cn_edge[OLD_POST_IDX])), axis=0)
         elif lat_arc_idx == -2:
             if grapheme:
                 new_cn_grapheme_data[cn_edge_idx] = np.zeros_like(lat_grapheme_data[0])

@@ -87,20 +87,31 @@ def raw_lattice_exploration(args):
     extention_dir = args.extension_dir
     return read_htk_lattice_edges(base_dir, extention_dir)
 
-
-def target_counts(lattice_path):
-    lattice = np.load(lattice_path)
-    targets = lattice['target']
-    assert targets.ndim == 1
-    num_ones = np.sum(targets)
-    num_zeros = targets.shape[0] - num_ones
+def count(array):
+    assert array.ndim == 1
+    num_ones = np.sum(array)
+    num_zeros = array.shape[0] - num_ones
     return num_zeros, num_ones
 
+def target_counts(targets_path):
+    targets_file = np.load(targets_path)
+    # For all arcs
+    targets = targets_file['target']
+    num_zeros, num_ones = count(targets)
+    # For one-best
+    ref = targets_file['ref']
+    onebest_zeros, onebest_ones = count(ref)
+    # For competing arcs
+    competing_zeros = num_zeros - onebest_zeros
+    competing_ones = num_ones - onebest_ones
+    return num_zeros, num_ones, onebest_zeros, onebest_ones, competing_zeros, competing_ones
 
-def dataset_balance(dataset_dir):
+
+def dataset_balance(targets_dir):
     """ For each lattice in the dataset, find the number of edges
         tagged with a confidence of one and the number of edges tagged
         with a confidence of zero.
+        TODO: This is quite lazy - could use functions to get rid of repetition
     """
     dataset_balance_dict = {
         'total-negative-tags': 0,
@@ -109,27 +120,74 @@ def dataset_balance(dataset_dir):
         'positive-tags-per-lattice': []
     }
 
-    for root, _, names in os.walk(dataset_dir):
+    onebest_balance_dict = {
+        'onebest-negative-tags': 0,
+        'onebest-positive-tags': 0,
+        'negative-onebest-tags-per-lattice': [],
+        'positive-onebest-tags-per-lattice': []
+    }
+
+    competing_balance_dict = {
+        'competing-negative-tags': 0,
+        'competing-positive-tags': 0,
+        'negative-competing-tags-per-lattice': [],
+        'positive-competing-tags-per-lattice': []
+    }
+
+    for root, _, names in os.walk(targets_dir):
         for name in names:
             if name.endswith('.npz'):
-                lattice_path = os.path.join(root, name)
-                zero_counts, one_counts = target_counts(lattice_path)
+                target_path = os.path.join(root, name)
+                zero_counts, one_counts, onebest_zeros, onebest_ones, competing_zeros, competing_ones = target_counts(target_path)
+                # All counts
                 dataset_balance_dict['total-negative-tags'] += zero_counts
                 dataset_balance_dict['total-positive-tags'] += one_counts
                 dataset_balance_dict['negative-tags-per-lattice'].append(zero_counts)
                 dataset_balance_dict['positive-tags-per-lattice'].append(one_counts)
 
-    dataset_balance_dict['pmf-pos'] = np.histogram(
+                # Onebest counts
+                onebest_balance_dict['onebest-negative-tags'] += onebest_zeros
+                onebest_balance_dict['onebest-positive-tags'] += onebest_ones
+                onebest_balance_dict['negative-onebest-tags-per-lattice'].append(onebest_zeros)
+                onebest_balance_dict['positive-onebest-tags-per-lattice'].append(onebest_ones)
+
+                # Competing counts
+                competing_balance_dict['competing-negative-tags'] += competing_zeros
+                competing_balance_dict['competing-positive-tags'] += competing_ones
+                competing_balance_dict['negative-competing-tags-per-lattice'].append(competing_zeros)
+                competing_balance_dict['positive-competing-tags-per-lattice'].append(competing_ones)
+
+    dataset_balance_dict['total-pmf-pos'] = np.histogram(
         dataset_balance_dict['positive-tags-per-lattice'],
         bins=np.arange(np.max(dataset_balance_dict['positive-tags-per-lattice']) + 1),
         density=True
     )
-    dataset_balance_dict['pmf-neg'] = np.histogram(
+    dataset_balance_dict['total-pmf-neg'] = np.histogram(
         dataset_balance_dict['negative-tags-per-lattice'],
         bins=np.arange(np.max(dataset_balance_dict['negative-tags-per-lattice']) + 1),
         density=True
     )
-    return dataset_balance_dict
+    onebest_balance_dict['onebest-pmf-pos'] = np.histogram(
+        onebest_balance_dict['positive-onebest-tags-per-lattice'],
+        bins=np.arange(np.max(onebest_balance_dict['positive-onebest-tags-per-lattice']) + 1),
+        density=True
+    )
+    onebest_balance_dict['onebest-pmf-neg'] = np.histogram(
+        onebest_balance_dict['negative-onebest-tags-per-lattice'],
+        bins=np.arange(np.max(onebest_balance_dict['negative-onebest-tags-per-lattice']) + 1),
+        density=True
+    )
+    competing_balance_dict['competing-pmf-pos'] = np.histogram(
+        competing_balance_dict['positive-competing-tags-per-lattice'],
+        bins=np.arange(np.max(competing_balance_dict['positive-competing-tags-per-lattice']) + 1),
+        density=True
+    )
+    competing_balance_dict['competing-pmf-neg'] = np.histogram(
+        competing_balance_dict['negative-competing-tags-per-lattice'],
+        bins=np.arange(np.max(competing_balance_dict['negative-competing-tags-per-lattice']) + 1),
+        density=True
+    )
+    return dataset_balance_dict, onebest_balance_dict, competing_balance_dict
 
 
 def read_pickle(file_name):
@@ -180,8 +238,10 @@ def main(args):
         stats_dict = generate_statistics(edge_count_list)
 
         if args.processed and args.dataset_balance:
-            dataset_balance_dict = dataset_balance(args.target_dir)
+            dataset_balance_dict, onebest_balance_dict, competing_balance_dict = dataset_balance(args.target_dir)
             stats_dict.update(dataset_balance_dict)
+            stats_dict.update(onebest_balance_dict)
+            stats_dict.update(competing_balance_dict)
 
         save_results(stats_dict, args.output_stats)
         print(stats_dict)

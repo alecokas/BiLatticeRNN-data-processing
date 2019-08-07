@@ -165,37 +165,42 @@ def dataset_balance(targets_dir):
         bins=np.arange(np.max(dataset_balance_dict['positive-tags-per-lattice']) + 1),
         density=True
     )
-    plot_distributions(dataset_balance_dict['positive-tags-per-lattice'], 'positive-tags-per-lattice')
+    plot_distributions(dataset_balance_dict['positive-tags-per-lattice'], 'total-pmf-pos')
+
     dataset_balance_dict['total-pmf-neg'] = np.histogram(
         dataset_balance_dict['negative-tags-per-lattice'],
         bins=np.arange(np.max(dataset_balance_dict['negative-tags-per-lattice']) + 1),
         density=True
     )
-    plot_distributions(dataset_balance_dict['negative-tags-per-lattice'], 'negative-tags-per-lattice')
+    plot_distributions(dataset_balance_dict['negative-tags-per-lattice'], 'total-pmf-neg')
+
     onebest_balance_dict['onebest-pmf-pos'] = np.histogram(
         onebest_balance_dict['positive-onebest-tags-per-lattice'],
         bins=np.arange(np.max(onebest_balance_dict['positive-onebest-tags-per-lattice']) + 1),
         density=True
     )
-    plot_distributions(dataset_balance_dict['onebest-pmf-pos'], 'nonebest-pmf-pos')
+    plot_distributions(dataset_balance_dict['positive-onebest-tags-per-lattice'], 'onebest-pmf-pos')
+
     onebest_balance_dict['onebest-pmf-neg'] = np.histogram(
         onebest_balance_dict['negative-onebest-tags-per-lattice'],
         bins=np.arange(np.max(onebest_balance_dict['negative-onebest-tags-per-lattice']) + 1),
         density=True
     )
-    plot_distributions(dataset_balance_dict['onebest-pmf-neg'], 'nonebest-pmf-neg')
+    plot_distributions(dataset_balance_dict['negative-onebest-tags-per-lattice'], 'onebest-pmf-neg')
+
     competing_balance_dict['competing-pmf-pos'] = np.histogram(
         competing_balance_dict['positive-competing-tags-per-lattice'],
         bins=np.arange(np.max(competing_balance_dict['positive-competing-tags-per-lattice']) + 1),
         density=True
     )
-    plot_distributions(dataset_balance_dict['competing-pmf-pos'], 'competing-pmf-pos')
+    plot_distributions(dataset_balance_dict['positive-competing-tags-per-lattice'], 'competing-pmf-pos')
+
     competing_balance_dict['competing-pmf-neg'] = np.histogram(
         competing_balance_dict['negative-competing-tags-per-lattice'],
         bins=np.arange(np.max(competing_balance_dict['negative-competing-tags-per-lattice']) + 1),
         density=True
     )
-    plot_distributions(dataset_balance_dict['competing-pmf-neg'], 'competing-pmf-neg')
+    plot_distributions(dataset_balance_dict['negative-competing-tags-per-lattice'], 'competing-pmf-neg')
     return dataset_balance_dict, onebest_balance_dict, competing_balance_dict
 
 def read_pickle(file_name):

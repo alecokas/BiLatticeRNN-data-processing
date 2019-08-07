@@ -108,7 +108,6 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
     # Only need to iteratively update new_cn_edge_data if we are adding features
     added_feature_count = num_added_features(include_am, include_lm)
     if added_feature_count > 0:
-        print(cn_edge_data.shape[1])
         new_cn_edge_data = np.empty((cn_edge_data.shape[0], cn_edge_data.shape[1] + added_feature_count))
         update_cn_edge_data = True
     else:

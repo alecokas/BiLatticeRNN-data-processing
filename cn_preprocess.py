@@ -271,13 +271,13 @@ def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_t
         dec_tree {str} -- absolute path to decision tree object
     """
     name = cn_path.split('/')[-1].split('.')[0] + '.npz'
-    try:
-        LOGGER.info(name)
-        confusion_net = CN(cn_path)
-        confusion_net.convert_to_lattice(wordvec_dict, subword_embedding, dst_dir, log, dec_tree, ignore_time_seg, processed_file_list_path)
-    except OSError as exception:
-        print('OSError: {}'.format(cn_path))
-        LOGGER.info('%s\n' %cn_path + str(exception))
+    #try:
+    LOGGER.info(name)
+    confusion_net = CN(cn_path)
+    confusion_net.convert_to_lattice(wordvec_dict, subword_embedding, dst_dir, log, dec_tree, ignore_time_seg, processed_file_list_path)
+    #except OSError as exception:
+    #    print('OSError: {}'.format(cn_path))
+    #    LOGGER.info('%s\n' %cn_path + str(exception))
 
 def main():
     """Main function for converting CN into `.npz` lattices."""

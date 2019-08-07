@@ -25,7 +25,6 @@ def read_processed_lattices_edges(dataset_dir):
                 edge_count_list.append(len(lattice['edge_data']))
     return np.asarray(edge_count_list)
 
-
 def generate_statistics(edge_count_list):
     """ Return a dictionary with some statistics """
     stats_dict = {}
@@ -35,11 +34,9 @@ def generate_statistics(edge_count_list):
     stats_dict['pmf'] = np.histogram(edge_count_list, bins=np.arange(np.max(edge_count_list) + 1), density=True)
     return stats_dict
 
-
 def save_results(results_dict, target_file):
     with open(target_file + '.pickle', 'wb') as tgt_file:
         pickle.dump(results_dict, tgt_file, protocol=pickle.HIGHEST_PROTOCOL)
-
 
 def processed_lattice_exploration(args):
     """ Extract and return a list of the number of edges in each HTK lattice. """
@@ -48,7 +45,6 @@ def processed_lattice_exploration(args):
         raise Exception('{} is not a valid directory'.format(dataset_dir))
 
     return read_processed_lattices_edges(dataset_dir)
-
 
 def read_num_edges(lattice_path):
     """
@@ -64,7 +60,6 @@ def read_num_edges(lattice_path):
             num_edges = float(counts[1].split('=')[1])
             return num_nodes, num_edges
 
-
 def read_htk_lattice_edges(base_dir, extention_dir):
     subsets = ['dev', 'eval']
     edge_count_list = []
@@ -79,7 +74,6 @@ def read_htk_lattice_edges(base_dir, extention_dir):
                 _, num_edges = read_num_edges(abs_lat_path)
                 edge_count_list.append(num_edges)
     return edge_count_list
-
 
 def raw_lattice_exploration(args):
     """ """
@@ -105,7 +99,6 @@ def target_counts(targets_path):
     competing_zeros = num_zeros - onebest_zeros
     competing_ones = num_ones - onebest_ones
     return num_zeros, num_ones, onebest_zeros, onebest_ones, competing_zeros, competing_ones
-
 
 def dataset_balance(targets_dir):
     """ For each lattice in the dataset, find the number of edges
@@ -189,13 +182,11 @@ def dataset_balance(targets_dir):
     )
     return dataset_balance_dict, onebest_balance_dict, competing_balance_dict
 
-
 def read_pickle(file_name):
     """ Load the pickle file
     """
     with (open(file_name, "rb")) as openfile:
         return pickle.load(openfile)
-
 
 def visualise(stats, pickle_name):
     num_arcs_hist, num_arcs_bin_edges = stats['pmf']
@@ -204,25 +195,50 @@ def visualise(stats, pickle_name):
         bin_edges=num_arcs_bin_edges,
         file_name='{}-{}'.format(pickle_name[:-7], 'arc-count-distribution.png')
     )
-    pos_count_hist, pos_count_bins = stats['pmf-pos']
+    # Total
+    pos_count_hist, pos_count_bins = stats['total-pmf-pos']
     histogram_image(
         hist=pos_count_hist,
         bin_edges=pos_count_bins,
-        file_name='{}-{}'.format(pickle_name[:-7], 'pos-distribution.png')
+        file_name='{}-{}'.format(pickle_name[:-7], 'total-pos-distribution.png')
     )
-    neg_count_hist, neg_count_bins = stats['pmf-neg']
+    neg_count_hist, neg_count_bins = stats['total-pmf-neg']
     histogram_image(
         hist=neg_count_hist,
         bin_edges=neg_count_bins,
-        file_name='{}-{}'.format(pickle_name[:-7], 'neg-distribution.png')
+        file_name='{}-{}'.format(pickle_name[:-7], 'total-neg-distribution.png')
     )
-
+    # One-best
+    pos_count_hist, pos_count_bins = stats['onebest-pmf-pos']
+    histogram_image(
+        hist=pos_count_hist,
+        bin_edges=pos_count_bins,
+        file_name='{}-{}'.format(pickle_name[:-7], 'onebest-pos-distribution.png')
+    )
+    neg_count_hist, neg_count_bins = stats['onebest-pmf-neg']
+    histogram_image(
+        hist=neg_count_hist,
+        bin_edges=neg_count_bins,
+        file_name='{}-{}'.format(pickle_name[:-7], 'onebest-neg-distribution.png')
+    )
+    # Competing arcs
+    pos_count_hist, pos_count_bins = stats['competing-pmf-pos']
+    histogram_image(
+        hist=pos_count_hist,
+        bin_edges=pos_count_bins,
+        file_name='{}-{}'.format(pickle_name[:-7], 'competing-pos-distribution.png')
+    )
+    neg_count_hist, neg_count_bins = stats['competing-pmf-neg']
+    histogram_image(
+        hist=neg_count_hist,
+        bin_edges=neg_count_bins,
+        file_name='{}-{}'.format(pickle_name[:-7], 'competing-neg-distribution.png')
+    )
 
 def histogram_image(hist, bin_edges, file_name):
     plt.bar(bin_edges[:-1], hist, width=1)
     plt.xlim(min(bin_edges), max(bin_edges))
     plt.savefig(file_name)
-
 
 def main(args):
     """ Primary entry point for the script. """
@@ -244,9 +260,6 @@ def main(args):
             stats_dict.update(competing_balance_dict)
 
         save_results(stats_dict, args.output_stats)
-        print(stats_dict)
-
-
 
 def parse_arguments(args_to_parse):
     """ Parse the command line arguments.

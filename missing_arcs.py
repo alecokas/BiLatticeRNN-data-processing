@@ -27,7 +27,6 @@ def get_cn(log_line):
     return cn_name
 
 def main(args):
-    # log_list = read_log_to_list(args.log_file)
     missing_arc_list = []
     cn_arc_dict = {}
     with open(args.log_file, 'r') as log_file:
@@ -43,15 +42,20 @@ def main(args):
                 missing_arc_list = []
 
     print('Number of failed confusion networks: {}'.format(len(cn_arc_dict.keys())))
+    total_num_arcs = 0
     for subset in ['train.txt', 'cv.txt', 'test.txt']:
         num_arcs = 0
         with open(subset, 'r') as subset_file:
             file_names = subset_file.readlines()
             for file_name in file_names:
-                if file_name in cn_arc_dict.keys():
+                file_name = file_name.split('/')[-1].split('.')[0]
+                if file_name in cn_arc_dict:
+                    # print(file_name)
                     num_arcs += len(cn_arc_dict[file_name])
         subset_name = subset.split('.')[0]
         print('{} has {} arcs'.format(subset_name, num_arcs))
+        total_num_arcs += num_arcs
+    print('Total number of arcs: {}'.format(total_num_arcs))
 
 def parse_arguments(args_to_parse):
     """ Parse the command line arguments.

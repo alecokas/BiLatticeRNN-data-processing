@@ -107,8 +107,9 @@ def plot_distributions(array, file_name):
                                 alpha=0.7, rwidth=0.85, density=True)
     plt.grid(axis='y', alpha=0.75)
     plt.ylim(ymax=np.max(n))
+    plt.ylabel('Probability', fontsize=16)
+    plt.xlabel('Number of Occurrences', fontsize=16)
     plt.savefig(file_name, dpi=fig.dpi)
-    # plt.show()
 
 def dataset_balance(targets_dir):
     """ For each lattice in the dataset, find the number of edges

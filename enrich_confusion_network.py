@@ -117,7 +117,7 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
     if grapheme:
         if 'grapheme_data' in cn.keys():
             if not (cn['grapheme_data'].any() == None):
-                print('Warning: The source lattices already contain grapheme information - Overwiriting')
+                raise Exception('Warning: The source lattices already contain grapheme information - Overwiriting')
                 LOGGER.info('Warning: The source lattices already contain grapheme information - Overwiriting')
         new_cn_grapheme_data = np.empty((cn_edge_data.shape[0], lat_grapheme_data.shape[1], lat_grapheme_data.shape[2]))
     elif 'grapheme_data' in cn.keys():

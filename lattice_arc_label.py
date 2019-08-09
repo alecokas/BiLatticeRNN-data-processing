@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Script for generating arc labels."""
+"""
+    DON'T USE
+    Script for generating arc labels.
+"""
 
 import os
 import argparse

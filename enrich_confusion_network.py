@@ -87,7 +87,7 @@ def check_match_quality(lat_edge, lat_start_time, cn_edge, cn_start_time, cn_fil
     if abs(lat_start_time - cn_start_time) > FRAME_PERIOD * 5 or abs(lat_end_time - cn_end_time) > FRAME_PERIOD * 5:
         LOGGER.info('{}\n\t\t\t\t\t\t Lattice start time: {} Lattice end time: {}\n\t\t\t\t\t\t Confnet start time: {} Confnet end time: {}'.format(cn_file_path, lat_start_time, lat_end_time, cn_start_time, cn_end_time))
 
-def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, grapheme, reverse_wordvec, time_threshold):
+def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, grapheme, include_duration, reverse_wordvec, time_threshold):
     print('Enriching: {}'.format(file_name))
     success = True
     # For each edge in the confusion network, the following information is contained:
@@ -175,9 +175,13 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
                 if include_lm:
                     new_features.append(lat_edge[lat_arc_idx, LM_INDEX])
                     # Join the Confnet word vector, the duration from the lattice, and any new features
-                    # TODO: Untested since I swaped the order that they are stored (see comment below)
+                    # TODO: Untested since I swaped the order that they are stored (see comment below) - actually tested now - pending on this
                 # new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge[:DURATION_IDX], np.array([lat_edge[lat_arc_idx, DURATION_IDX], cn_edge[OLD_POST_IDX]]), np.array(new_features)), axis=0)
-                new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge[:DURATION_IDX], np.array(lat_edge[lat_arc_idx, DURATION_IDX]), np.array(new_features), np.array(cn_edge[OLD_POST_IDX])), axis=0)
+                if include_duration:
+                    duration = np.array([lat_edge[lat_arc_idx, DURATION_IDX]])
+                else:
+                    duration = np.array([cn_edge[DURATION_IDX]])
+                new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge[:DURATION_IDX], duration, np.array(new_features), np.array([cn_edge[OLD_POST_IDX]])), axis=0)
         elif lat_arc_idx == -2:
             if grapheme:
                 new_cn_grapheme_data[cn_edge_idx] = np.zeros_like(lat_grapheme_data[0])
@@ -222,7 +226,7 @@ def main(args):
             raise Exception('No matching lattice for the confusion network file {}'.format(file_name))
         lat_path = os.path.join(args.lattice_dir, file_name)
         cn_path = os.path.join(args.confusion_network_dir, file_name)
-        success = enrich_cn(file_name, cn_path, lat_path, args.output_dir, args.lm, args.am, args.grapheme, reverse_wordvec, args.time_threshold)
+        success = enrich_cn(file_name, cn_path, lat_path, args.output_dir, args.lm, args.am, args.grapheme, args.duration, reverse_wordvec, args.time_threshold)
         if not success:
             LOGGER.info('CN {} was not enriched'.format(cn_path))
     LOGGER.info('================= Process complete =================')
@@ -257,6 +261,10 @@ def parse_arguments(args_to_parse):
     parser.add_argument(
         '--grapheme', dest='grapheme', action='store_true', default=False,
         help='Include the grapheme information on the confusion network arc'
+    )
+    parser.add_argument(
+        '--duration', dest='duration', action='store_true', default=False,
+        help='Replace confusion network duration with the duration from the grapheme arc'
     )
     parser.add_argument(
         '-t', '--time-threshold', type=float, default=1,

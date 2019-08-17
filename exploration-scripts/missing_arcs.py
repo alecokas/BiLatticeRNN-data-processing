@@ -50,7 +50,6 @@ def main(args):
             for file_name in file_names:
                 file_name = file_name.split('/')[-1].split('.')[0]
                 if file_name in cn_arc_dict:
-                    # print(file_name)
                     num_arcs += len(cn_arc_dict[file_name])
         subset_name = subset.split('.')[0]
         print('{} has {} arcs'.format(subset_name, num_arcs))

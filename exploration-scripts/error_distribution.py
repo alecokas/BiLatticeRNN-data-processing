@@ -1,6 +1,4 @@
 import argparse
-# import matplotlib
-# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -42,8 +40,6 @@ def get_errors(input_file):
                     raise Exception('Unexpected format. A lattice line should always be followed by a confnet line')
                 cn_regex_results = re.findall(r'[0-9]+.[0-9]+', cn_line)
                 cn_start_time, cn_stop_time = cn_regex_results
-                # print(lattice_start_time, lattice_stop_time)
-                # print(cn_start_time, cn_stop_time)
 
                 error_list = curate_error_data(lattice_start_time, lattice_stop_time, cn_start_time, cn_stop_time)
                 errors.append(error_list)
@@ -92,7 +88,6 @@ def plot_distributions(error_array, directory):
         plt.ylabel('Normalised Probability Mass',  fontsize=14)
         plt.ylim(ymax=np.max(n))
         file_name = os.path.join(directory, 'distribution-{}'.format(i))
-        # plt.savefig(file_name, dpi=fig.dpi)
         plt.show()
 
 def main(args):

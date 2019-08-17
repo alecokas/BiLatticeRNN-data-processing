@@ -13,11 +13,9 @@ import numpy as np
 from preprocess_lattices import read_lattice
 from toposort import toposort_flatten
 import utils
-# from preprocess import levenshtein
 
 def score(array, grammar_scale=20.0):
     """Get the combined score from the vector."""
-    # assert len(array) == 4, "lattice feature dimension wrong: it is {}, but should be 4".format(len(array))
     am_score = array[2]
     lm_score = array[3]
     return am_score / grammar_scale + lm_score
@@ -89,10 +87,10 @@ def load_baseline(file_name):
                 baseline_dict[utt_id] = (ref_label, sequence)
     return baseline_dict
 
-def tagging(stm, time_span, word, coeff=0.5):
+def tagging(ctm, time_span, word, coeff=0.5):
     """Arc tagging policy based on overlapping time."""
-    time = stm['time']
-    time = np.append(time, [stm['time'][-1] + stm['duration'][-1]])
+    time = ctm['time']
+    time = np.append(time, [ctm['time'][-1] + ctm['duration'][-1]])
     start, end = time_span[0], time_span[1]
     left_pos = bisect_left(time, start)
     right_pos = bisect_left(time, end)
@@ -111,21 +109,21 @@ def tagging(stm, time_span, word, coeff=0.5):
             right_time = time[i+1]
             overlap = (min(right_time, end) - max(left_time, start)) \
                       / (max(right_time, end) - min(left_time, start))
-            if overlap > coeff and word == stm['word'][i]:
+            if overlap > coeff and word == ctm['word'][i]:
                 tag = 1
         return tag
 
-def label(lattice_path, stm_dir, dst_dir, baseline_dict, threshold=0.5):
-    """Read HTK lattice and label each arc."""
+def label(lattice_path, ctm_dir, dst_dir, baseline_dict, threshold=0.5):
+    """ Read HTK lattice and label each arc. """
     name = lattice_path.split('/')[-1].split('.')[0] #BPL404-97376-20141126-024552-ou_COXXXXX_0024915_0025043
     target_name = os.path.join(dst_dir, name + '.npz')
 
     if not os.path.isfile(target_name):
         name_parts = name.split('_')
         prefix = name_parts[0]
-        stm_file = os.path.join(stm_dir, prefix + '.npz') #taking npz file from data/*/stm/*.npz 
+        ctm_file = os.path.join(ctm_dir, prefix + '.npz')
         try:
-            stm = np.load(stm_file)
+            ctm = np.load(ctm_file)
             start_frame = int(name_parts[-2])/100.
 
             nodes, edges, dependency, child_dict, parent_dict = read_lattice(lattice_path)
@@ -135,7 +133,7 @@ def label(lattice_path, stm_dir, dst_dir, baseline_dict, threshold=0.5):
             for edge in edges:
                 time_span = (nodes[edge[0]][0], nodes[edge[1]][0])
                 word = nodes[edge[1]][1]
-                edge_label = tagging(stm, time_span, word, threshold)
+                edge_label = tagging(ctm, time_span, word, threshold)
                 edge_labels.append(edge_label)
             target = np.array(edge_labels, dtype='f')
             print("%s\t\t%f" %(name, np.mean(target)))
@@ -144,10 +142,9 @@ def label(lattice_path, stm_dir, dst_dir, baseline_dict, threshold=0.5):
                                           parent_dict)
             ref, seq_2 = baseline_dict[name]
             assert len(ref) == len(indices)
-            # assert seq_1 == seq_2
             np.savez(target_name, target=target, indices=indices, ref=ref)
         except IOError:
-            raise Exception("ERROR: file does not exist: %s" %stm_file)
+            raise Exception("ERROR: file does not exist: %s" %ctm_file)
         except KeyError:
             raise Exception("ERROR: baseline does not contain this lattice %s" %name)
         except AssertionError:
@@ -177,12 +174,12 @@ def main():
     )
     parser.add_argument(
         '-b', '--one-best', type=str,
-        default='/home/dawna/babel/BABEL_OP3_404/releaseB/exp-graphemic-ar527-v3/J2/decode-ibmseg-fcomb/scoring/sclite/dev/decode_rescore_tg_20.0_0.0_rescore_wlat_20.0_0.0_rescore_plat_20.0_0.0.mlf.det',
+        default='',
         help='Path to the one best transcription (*.mlf.det file) for the lattice files given in file-list-dir.'
     )
     parser.add_argument(
-        '-stm', '--stm-dir', type=str, required=True,
-        help='Directory containing reference stm files for arc tagging (*.stm file).'
+        '-ctm', '--ctm-dir', type=str, required=True,
+        help='Directory containing reference CTM files for arc tagging (*.stm file).'
     )
     parser.add_argument(
         '-d', '--dst-dir', type=str, required=True,
@@ -206,7 +203,7 @@ def main():
                 lattice_list.append(path_to_lat.strip())
 
     with Pool(args.num_threads) as pool:
-        pool.starmap(label, zip(lattice_list, repeat(args.stm_dir), repeat(dst_dir),
+        pool.starmap(label, zip(lattice_list, repeat(args.ctm_dir), repeat(dst_dir),
                                 repeat(baseline_dict), repeat(args.threshold)))
 
 if __name__ == '__main__':

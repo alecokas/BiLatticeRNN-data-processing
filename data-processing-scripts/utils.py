@@ -92,6 +92,7 @@ def print_color_msg(msg):
     print("\033[38;5;108m%s\033[0m" %(msg))
 
 def remove_file(file_path):
+    """ Remove file if it exists """
     try:
         os.remove(file_path)
     except OSError:

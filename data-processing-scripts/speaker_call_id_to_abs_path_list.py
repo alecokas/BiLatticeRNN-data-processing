@@ -23,8 +23,7 @@ def unzip(input_dir, target_directory):
             else:
                 raise Exception('The target file must have the .gz extension.')
 
-def compile_lattice_list(base_directory='/home/dawna/babel/BABEL_OP3_404/releaseB/exp-graphemic-ar527-v3/J2/decode-ibmseg-fcomb/test/',
-                         ext_dir='decode/rescore/tg_20.0_0.0/rescore/wlat_20.0_0.0/rescore/plat_20.0_0.0/rescore/tg_lat_post_prec_t500_20.0_0.0/lattices/'):
+def compile_lattice_list(base_directory, ext_dir):
     subsets = ['dev', 'eval']
     path_list = []
     for subset in subsets:
@@ -45,7 +44,7 @@ def compile_lattice_list(base_directory='/home/dawna/babel/BABEL_OP3_404/release
     return path_list
 
 
-def read_reference_lst_files(dataset_split_dir='info/reference-lists'):
+def read_reference_lst_files(dataset_split_dir='subset-splits/reference-lists'):
     """ Read in the files containing the reference for which lattices are in the
         train, cross-validation, and test sets. These are stored in 3 sets which
         can be indexed from a dictionary.

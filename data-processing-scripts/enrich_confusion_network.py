@@ -27,6 +27,7 @@ def set_of_processed_file_names(directory_to_search, remove_extension=False, ext
     return processed_names
 
 def num_added_features(include_am, include_lm):
+    """ Determine the number of added word-level features (specifically AM and LM) """
     added_feature_count = 0
     if include_am:
         added_feature_count += 1
@@ -35,6 +36,10 @@ def num_added_features(include_am, include_lm):
     return added_feature_count
 
 def cost_fn(x1_start_time, x1_dur, x2_start_time, x2_dur, max_time_diff):
+    """ A cost function for determining the similarity between two arcs which have already
+        been checked for matching word ID. The max_time_diff is a hard threshold for rejecting
+        an arc match.
+    """
     x1_end_time = x1_start_time + x1_dur
     x2_end_time = x2_start_time + x2_dur
 
@@ -62,7 +67,7 @@ def find_match(cn_word_emb, cn_word, cn_edge_start_time, cn_edge_duration, lat_w
                 if cost == min_cost:
                     candidate_list.append((lat_arc_idx, cost, lat_posteriors[lat_arc_idx]))
                 else:
-                    # cost < min_cost
+                    # When cost < min_cost
                     candidate_list = [(lat_arc_idx, cost, lat_posteriors[lat_arc_idx])]
                     min_cost = cost
     if not candidate_list:
@@ -81,11 +86,17 @@ def find_match(cn_word_emb, cn_word, cn_edge_start_time, cn_edge_duration, lat_w
     return match
 
 def check_match_quality(lat_edge, lat_start_time, cn_edge, cn_start_time, cn_file_path):
+    """ Logs the time difference in start and end times if the difference of either of these
+        is greater than 5 times the frame period. The frame period used is 0.01 seconds.
+    """
     lat_end_time = lat_start_time + lat_edge[DURATION_IDX]
     cn_end_time = cn_start_time + cn_edge[DURATION_IDX]
 
     if abs(lat_start_time - cn_start_time) > FRAME_PERIOD * 5 or abs(lat_end_time - cn_end_time) > FRAME_PERIOD * 5:
-        LOGGER.info('{}\n\t\t\t\t\t\t Lattice start time: {} Lattice end time: {}\n\t\t\t\t\t\t Confnet start time: {} Confnet end time: {}'.format(cn_file_path, lat_start_time, lat_end_time, cn_start_time, cn_end_time))
+        LOGGER.info(
+            '{}\n\t\t\t\t\t\t Lattice start time: {} Lattice end time: {}\n\t\t\t\t\t\t Confnet start time: {} Confnet end time: {}'.format(
+                cn_file_path, lat_start_time, lat_end_time, cn_start_time, cn_end_time)
+        )
 
 def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, grapheme, include_duration, reverse_wordvec, time_threshold):
     print('Enriching: {}'.format(file_name))
@@ -118,7 +129,6 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
         if 'grapheme_data' in cn.keys():
             if not (cn['grapheme_data'].any() == None):
                 raise Exception('Warning: The source lattices already contain grapheme information - Overwiriting')
-                LOGGER.info('Warning: The source lattices already contain grapheme information - Overwiriting')
         new_cn_grapheme_data = np.empty((cn_edge_data.shape[0], lat_grapheme_data.shape[1], lat_grapheme_data.shape[2]))
     elif 'grapheme_data' in cn.keys():
         new_cn_grapheme_data = cn['grapheme_data']
@@ -174,9 +184,6 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
                     new_features.append(lat_edge[lat_arc_idx, AM_INDEX])
                 if include_lm:
                     new_features.append(lat_edge[lat_arc_idx, LM_INDEX])
-                    # Join the Confnet word vector, the duration from the lattice, and any new features
-                    # TODO: Untested since I swaped the order that they are stored (see comment below) - actually tested now - pending on this
-                # new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge[:DURATION_IDX], np.array([lat_edge[lat_arc_idx, DURATION_IDX], cn_edge[OLD_POST_IDX]]), np.array(new_features)), axis=0)
                 if include_duration:
                     duration = np.array([lat_edge[lat_arc_idx, DURATION_IDX]])
                 else:
@@ -190,9 +197,8 @@ def enrich_cn(file_name, cn_path, lat_path, output_dir, include_lm, include_am, 
                 # A row of zeros
                 new_cn_edge_data[cn_edge_idx] = np.concatenate((cn_edge[:DURATION_IDX + 2], np.array(new_features)), axis=0)
         else:
-            # Break and flag the lattice as not enriched
+            # Flag the lattice as not enriched and continue
             success = False
-            # break
 
     # save multiple variables into one .npz file
     full_file_path = os.path.join(output_dir, file_name)
@@ -226,7 +232,11 @@ def main(args):
             raise Exception('No matching lattice for the confusion network file {}'.format(file_name))
         lat_path = os.path.join(args.lattice_dir, file_name)
         cn_path = os.path.join(args.confusion_network_dir, file_name)
-        success = enrich_cn(file_name, cn_path, lat_path, args.output_dir, args.lm, args.am, args.grapheme, args.duration, reverse_wordvec, args.time_threshold)
+        success = enrich_cn(
+            file_name=file_name, cn_path=cn_path, lat_path=lat_path, output_dir=args.output_dir, include_lm=args.lm,
+            include_am=args.am, grapheme=args.grapheme, include_duration=args.duration, reverse_wordvec=reverse_wordvec,
+            time_threshold=args.time_threshold
+        )
         if not success:
             LOGGER.info('CN {} was not enriched'.format(cn_path))
     LOGGER.info('================= Process complete =================')
@@ -267,7 +277,7 @@ def parse_arguments(args_to_parse):
         help='Replace confusion network duration with the duration from the grapheme arc'
     )
     parser.add_argument(
-        '-t', '--time-threshold', type=float, default=1,
+        '-t', '--time-threshold', type=float, default=1.5,
         help='The maximum acceptable error to match arcs'
     )
     parser.add_argument(

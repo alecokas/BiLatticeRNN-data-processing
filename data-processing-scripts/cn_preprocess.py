@@ -182,6 +182,11 @@ def get_grapheme_info(grapheme_info, subword_embedding):
     return grapheme_feature_list
 
 def longest_grapheme_sequence(grapheme_list):
+    """ Determine the length of the longest grapheme sequence in the provided list.
+    
+        Arguments:
+            grapheme_list: Python list of the grapheme features
+    """
     max_length_seq = -1
     for arc in grapheme_list:
         seq_length = arc.shape[0]
@@ -189,7 +194,6 @@ def longest_grapheme_sequence(grapheme_list):
             max_length_seq = seq_length
     if max_length_seq == -1:
         raise Exception('max_length never updated')
-    # print('Max length: {}'.format(max_length_seq))
     return max_length_seq
 
 def pad_subword_sequence(subword_seq, max_seq_length):
@@ -271,13 +275,9 @@ def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_t
         dec_tree {str} -- absolute path to decision tree object
     """
     name = cn_path.split('/')[-1].split('.')[0] + '.npz'
-    #try:
     LOGGER.info(name)
     confusion_net = CN(cn_path)
     confusion_net.convert_to_lattice(wordvec_dict, subword_embedding, dst_dir, log, dec_tree, ignore_time_seg, processed_file_list_path)
-    #except OSError as exception:
-    #    print('OSError: {}'.format(cn_path))
-    #    LOGGER.info('%s\n' %cn_path + str(exception))
 
 def main():
     """Main function for converting CN into `.npz` lattices."""
@@ -306,7 +306,7 @@ def main():
     )  
     parser.add_argument(
         '-l', '--log', default=False, action='store_true',
-        help='use posterior probabilities in log domain'
+        help='Use posterior probabilities in log domain'
     )
     parser.add_argument(
         '-v', '--verbose',

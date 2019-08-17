@@ -28,7 +28,6 @@ def get_segments(file_name):
                         num_lines.append(count)
                         count = 1
                 else:
-                    # num_lines.append(count)
                     count += 1
         last_num_lines_entry = total_num_lines - sum(num_lines)
         num_lines.append(last_num_lines_entry)

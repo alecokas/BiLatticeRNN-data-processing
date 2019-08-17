@@ -74,9 +74,6 @@ def read_lattice(lattice_path, subword_embedding=None):
             am_score = float(line[3].split('=')[1])
             lm_score = float(line[4].split('=')[1])
 
-            # Set grapheme_dict to None so that if there is no grapheme information, this can
-            # be used downstream as a check
-            # grapheme_dict = None
             if line[5].split('=')[0] == 'r':
                 # Remove the prnounciation information if it is present
                 del line[5]
@@ -182,6 +179,11 @@ def remove_location_indicator(phone_with_location):
         return phone_with_location.split('^')[0]
 
 def longest_grapheme_sequence(grapheme_list):
+    """ Determine the length of the longest grapheme sequence in the provided list.
+    
+        Arguments:
+            grapheme_list: Python list of the grapheme features
+    """
     max_length_seq = -1
     for arc in grapheme_list:
         seq_length = arc.shape[0]
@@ -189,7 +191,6 @@ def longest_grapheme_sequence(grapheme_list):
             max_length_seq = seq_length
     if max_length_seq == -1:
         raise Exception('max_length never updated')
-    # print('Max length: {}'.format(max_length_seq))
     return max_length_seq
 
 
@@ -213,7 +214,7 @@ def pad_subword_sequence(subword_seq, max_seq_length):
 
 
 def chunks(l, n):
-    """Yield successive n-sized chunks from list l."""
+    """ Yield successive n-sized chunks from list l. """
     for i in range(0, len(l), n):
         yield l[i:i + n]
 

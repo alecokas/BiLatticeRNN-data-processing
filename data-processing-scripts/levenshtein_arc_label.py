@@ -61,24 +61,14 @@ def levenshtein_tagging(stm_file, conf_net_file, np_conf_net_file):
 	# generate stm sequence	
 	start_frame = conf_net_file.split('/')[-1].split('.')[0].split("_")[-2]
 	start_frame = float(start_frame)/100
-	#start = stm["time"][0]+start_frame
 	start = start_times[0]+start_frame
 	end = start_times[-1]+start_frame
 	stm_seq = get_stm_sequence(stm, start, end)
 
-	#print("stm seq has length", len(stm_seq))
-	#print("confnet seq has length", len(conf_seqs))
-	
-
 	# compute alignment and generate tags
 	scores, traceback = score_matrix(stm_seq, conf_seqs)
 	align_stm, align_conf = aligned_seq(stm_seq, conf_seqs, traceback)
-	# for i in range(len(align_stm)):
-	# 	print("\n", align_stm[i], align_conf[i], "\n")
 	tags = tagging(align_stm, align_conf)
-
-	#print(align_stm)
-	#print(align_conf)
 
 	return tags
 
@@ -107,8 +97,6 @@ def score_matrix(a, b):
 	for i in range(len(a)+1):
 		for j in range(len(b)+1):
 			scores[i][j]=scores[i][j]
-	# print("scores\n",scores)
-	# print("traceback\n",traceback)
 	return scores, traceback
 
 def aligned_seq(a, b, traceback):

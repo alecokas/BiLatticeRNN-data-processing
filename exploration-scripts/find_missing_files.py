@@ -1,6 +1,8 @@
 import argparse
-from enrich_confusion_network import set_of_processed_file_names
 import sys
+
+sys.path.append('../data-processing-scripts/')
+from enrich_confusion_network import set_of_processed_file_names
 
 
 def files_to_search_for(file_name):

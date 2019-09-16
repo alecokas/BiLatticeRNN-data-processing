@@ -298,7 +298,7 @@ def main():
     )
     parser.add_argument(
         '-f', '--file-list-dir', type=str,
-        help='The directory containing the files with the lists of lattice absolute paths for each subset (*.lat.txt)'
+        help='The directory containing the files with the lists of lattice absolute paths for each subset (*.cn.txt)'
     )
     parser.add_argument(
         '-p', '--processed-file-list-dir', type=str,
@@ -320,7 +320,7 @@ def main():
         type=int, default=30
     )
     parser.add_argument(
-        '--decision_tree', type=str, dest='dec_tree', required=False, default='NONE'
+        '--decision-tree', type=str, dest='dec_tree', required=False, default='NONE'
     )
     parser.add_argument(
         '--ignore_time_seg', dest='ignore_time_seg', required=False, default=False

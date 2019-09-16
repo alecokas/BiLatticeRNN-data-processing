@@ -10,19 +10,6 @@ from subprocess import call
 import sys
 
 
-def unzip(input_dir, target_directory):
-    for root, _, filenames in os.walk(input_dir):
-        for name in filenames:
-            if name.endswith('.gz'):
-                input_path_name = os.path.join(root, name)
-                try:
-                    os.makedirs(target_directory)
-                except FileExistsError:
-                    pass
-                call('zcat {} > {}'.format(input_path_name, os.path.join(target_directory, name[:-3])), shell=True)
-            else:
-                raise Exception('The target file must have the .gz extension.')
-
 def compile_lattice_list(base_directory, ext_dir):
     subsets = ['dev', 'eval']
     path_list = []

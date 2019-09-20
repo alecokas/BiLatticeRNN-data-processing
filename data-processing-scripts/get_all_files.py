@@ -12,16 +12,20 @@ EXTENSION = '.scf.gz'
 
 def prepare_file_names(names_list, validation_split, test_split):
     num_names = len(names_list)
+    print('num_names: {}'.format(num_names))
     num_val_names = int(num_names * validation_split)
     num_test_names = int(num_names * test_split)
     num_train_names = num_names - num_val_names - num_test_names
 
     test = names_list[:num_test_names]
-    val = names_list[num_test_names:]
+    val = names_list[num_test_names:num_test_names + num_val_names]
     train = names_list[num_test_names + num_val_names:]
 
     assert len(train) == num_train_names and len(val) == num_val_names and len(test) == num_test_names, \
         'Inconsistent lengths'
+
+    assert num_names == num_train_names + num_val_names + num_test_names, \
+        'Not all files included'
 
     subset_names_list = [train, val, test]
     lst_names = ['train.lst', 'cv.lst', 'test.lst']
@@ -44,8 +48,10 @@ def main(args):
     subset_names_list, lst_names = prepare_file_names(names_list, args.validation, args.test)
 
     for subset_names, lst_name in zip(subset_names_list, lst_names):
-        save(subset_names, os.path.join(args.target_dest, lst_name))
-
+        save(
+            target=os.path.join(args.target_dest, lst_name),
+            names_list=subset_names
+        )
 def parse_arguments(args_to_parse):
     """ Parse the command line arguments. """
     description = ""

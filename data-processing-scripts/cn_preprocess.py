@@ -64,6 +64,7 @@ class CN:
 
     def convert_to_lattice(self, wordvec_dict, subword_embedding, dst_dir, log, dec_tree, ignore_time_seg, processed_file_list_path=None, embed_apostrophe=False):
         """Convert confusion network object to lattice `.npz` format."""
+        oov = set()
         utils.mkdir(dst_dir)
         if ignore_time_seg != False:
             ignore_time_seg_dict = np.load(ignore_time_seg)
@@ -94,7 +95,10 @@ class CN:
                 if edge_info[0] == '!NULL':
                     wordvec = np.zeros_like(wordvec_dict['<hes>'])
                 else:
-                    wordvec = wordvec_dict[edge_info[0]]
+                    if edge_info[0] in wordvec_dict:
+                        wordvec = wordvec_dict[edge_info[0]]
+                    else:
+                        oov.add(edge_info[0])
                 if log:
                     if use_dec_tree:
                         conf=np.exp(edge_info[3])
@@ -158,6 +162,7 @@ class CN:
 
         if processed_file_list_path is not None:
             append_path_to_txt(os.path.abspath(npz_file_name), processed_file_list_path)
+        return oov
 
 def append_path_to_txt(path_to_add, target_file):
     with open(target_file, "a") as file:
@@ -286,44 +291,6 @@ def clean_subword_split(raw_subword_split):
     raw_subword = raw_subword_split[0] + pronunciation
     return raw_subword, apostrophe
 
-#def strip_phone(phone_info, phone_context_width, incl_posn_info):
-#    """ Strip phones of context and optionally the location indicator
-#
-#        Arguments:
-#            phone_info: String with the full phone context information and location indicators.
-#            phone_context_width: The phone context width as an integer
-#            incl_posn_info: A boolean indicator for whether or not to include the phone position information (^I, ^M, ^F)
-#    """
-#    if phone_context_width > 3:
-#        raise Exception('The phone context width cannot be greater than 3.')
-#
-#    itemised_phone_info = re.split(r'\+|\-', phone_info)
-#    if len(itemised_phone_info) == 1:
-#        return itemised_phone_info[0] if incl_posn_info else remove_location_indicator(itemised_phone_info[0])
-#    elif len(itemised_phone_info) == 3:
-#        if phone_context_width > 1:
-#            # Assume that if the context is 2 (bigram), we want the include the preceding phone
-#            stop = phone_context_width
-#            return itemised_phone_info[:stop] if incl_posn_info else remove_location_indicator(itemised_phone_info[:stop])
-#        else:
-#            return itemised_phone_info[1] if incl_posn_info else remove_location_indicator(itemised_phone_info[1])
-#    else:
-#        raise Exception('The phone length should be 1 or 3, but found {}'.format(len(itemised_phone_info)))
-#
-#def remove_location_indicator(phone_with_location):
-#    """ Strip location indicators from a string or strings within a list and return the result as a string
-#
-#        Arguments:
-#            phone_with_location: Either a string or list containing the raw phone with location indicators.
-#    """
-#    if isinstance(phone_with_location, list):
-#        clean_phone_list = []
-#        for phone in phone_with_location:
-#            clean_phone_list.append(phone.split('^')[0])
-#        return ' '.join(clean_phone_list)
-#    else:
-#        return phone_with_location.split('^')[0]
-
 def load_wordvec(path):
     """Load pre-computed word vectors.
 
@@ -350,7 +317,8 @@ def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_t
     name = cn_path.split('/')[-1].split('.')[0] + '.npz'
     LOGGER.info(name)
     confusion_net = CN(cn_path)
-    confusion_net.convert_to_lattice(wordvec_dict, subword_embedding, dst_dir, log, dec_tree, ignore_time_seg, processed_file_list_path, embed_apostrophe)
+    oov = confusion_net.convert_to_lattice(wordvec_dict, subword_embedding, dst_dir, log, dec_tree, ignore_time_seg, processed_file_list_path, embed_apostrophe)
+    return oov
 
 def main():
     """Main function for converting CN into `.npz` lattices."""
@@ -434,15 +402,20 @@ def main():
         with open(os.path.abspath(lat_file_list), 'r') as file_in:
             for line in file_in:
                 cn_list.append(line.strip())
-
+        all_oov = set()
         for cn in cn_list:
             file_name = cn.split('/')[-1]
             print('Processing {}'.format(file_name[:-7]))
-            process_one_cn(
+            oov = process_one_cn(
                 cn, args.dst_dir, wordvec, subword_embedding, args.log,
                 args.dec_tree, args.ignore_time_seg, processed_subset_list[i],
                 args.embed_apostrophe
             )
+            all_oov.update(oov)
+    if not all_oov:
+        print('OOV words were detected which could not be mapped to an embedding\nThese are the words:\n{}'.format(all_oov))
+        with open('oov-words.txt', 'w') as oov_file:
+            oov_file.write('\n'.join(list(all_oov)))
 
 
 if __name__ == '__main__':

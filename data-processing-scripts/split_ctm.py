@@ -6,6 +6,13 @@ import numpy as np
 import os
 import utils
 
+
+START_IDX = 2
+DUR_IDX = 3
+WORD_IDX = 4
+LINE_LEN = 6
+
+
 def get_segments(file_name):
     """Get segments names and number of lines for each segment."""
     count = 1
@@ -19,7 +26,7 @@ def get_segments(file_name):
             if line[0].startswith(';;'):
                 count += 1
             else:
-                if len(line) > 5:
+                if len(line) >= LINE_LEN:
                     if line[0] == pre_segment:
                         count += 1
                     else:
@@ -46,11 +53,11 @@ def split_ctm(file_name, segments, num_lines, dst_dir):
             for _ in range(num_line):
                 line = next(file_in).split()
                 counter += 1
-                if not line[0].startswith(';;') and len(line) > 5:
+                if not line[0].startswith(';;') and len(line) >= LINE_LEN:
                     assert line[0] == segment, "Mismatch between {} and {}".format(line[0], segment)
-                    time.append(float(line[3]))
-                    duration.append(float(line[4]) - float(line[3]))
-                    word.append(line[5])
+                    time.append(float(line[START_IDX]))
+                    duration.append(float(line[DUR_IDX]))
+                    word.append(line[WORD_IDX])
             np.savez(dst_file, time=time, duration=duration, word=word)
 
 def num_lines_in_file(file_name):

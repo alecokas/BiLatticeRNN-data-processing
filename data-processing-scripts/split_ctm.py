@@ -48,8 +48,10 @@ def split_ctm(file_name, segments, num_lines, dst_dir, abbrev_segment_names):
         counter = 0
         for segment, num_line in zip(segments, num_lines):
             if abbrev_segment_names:
-                segment = abbreviate_segment(segment)
-            dst_file = os.path.join(dst_dir, segment + '.npz')
+                file_name = abbreviate_segment(segment)
+            else:
+                file_name = segment
+            dst_file = os.path.join(dst_dir, file_name + '.npz')
             time = []
             duration = []
             word = []
@@ -67,7 +69,14 @@ def abbreviate_segment(segment_name):
     """ Abbreviate the segment name. For instance:
         BABEL_OP2_202_10524_20131009_200043_inLine to BPL202-10524-20131009-200043-in
     """
-    segment_name = 'BPL{}'.format(segment_name[10:-4])
+    if segment_name.endswith('inLine'):
+        stop_point = -4
+    elif segment_name.endswith('outLine'):
+        stop_point = -5
+    else:
+        raise Exception('Unexpected segment name ending')
+
+    segment_name = 'BPL{}'.format(segment_name[10:stop_point])
     segment_name.replace('-', '_')
     return segment_name
 

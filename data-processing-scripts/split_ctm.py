@@ -4,6 +4,7 @@
 import argparse
 import numpy as np
 import os
+import sys
 import utils
 
 
@@ -41,11 +42,13 @@ def get_segments(file_name):
     assert len(segments) == len(num_lines), "%i != %i" %(len(segments), len(num_lines))
     return segments, num_lines
 
-def split_ctm(file_name, segments, num_lines, dst_dir):
+def split_ctm(file_name, segments, num_lines, dst_dir, abbrev_segment_names):
     """Split ctm into multiple smaller ones by segments."""
     with open(file_name, 'r') as file_in:
         counter = 0
         for segment, num_line in zip(segments, num_lines):
+            if abbrev_segment_names:
+                segment = abbreviate_segment(segment)
             dst_file = os.path.join(dst_dir, segment + '.npz')
             time = []
             duration = []
@@ -60,6 +63,14 @@ def split_ctm(file_name, segments, num_lines, dst_dir):
                     word.append(line[WORD_IDX])
             np.savez(dst_file, time=time, duration=duration, word=word)
 
+def abbreviate_segment(segment_name):
+    """ Abbreviate the segment name. For instance:
+        BABEL_OP2_202_10524_20131009_200043_inLine to BPL202-10524-20131009-200043-in
+    """
+    segment_name = 'BPL{}'.format(segment_name[10:-4])
+    segment_name.replace('-', '_')
+    return segment_name
+
 def num_lines_in_file(file_name):
     """ Count the number of lines in a file, return num lines is zero if the file is empty """
     line_idx = -1
@@ -68,8 +79,12 @@ def num_lines_in_file(file_name):
             pass
     return line_idx + 1
 
-def main():
-    """Main function for spliting CTM files (`.stm`) into `.npz` segnemts."""
+def parse_arguments(args_to_parse):
+    """ Parse the command line arguments.
+
+        Arguments:
+            args_to_parse: CLI arguments to parse
+    """
     parser = argparse.ArgumentParser(
         description='Split the two CTM files (*.stm) (alignment files) into the respective lattice file directories'
     )
@@ -86,7 +101,10 @@ def main():
         help='Path to the file containing the eval set train.stm alignment'
     )
     args = parser.parse_args()
+    return args
 
+def main(args):
+    """Main function for spliting CTM files (`.stm`) into `.npz` segnemts."""
     if os.path.isfile(args.dev_ctm) and os.path.isfile(args.eval_ctm):
         ctm_files = [args.dev_ctm, args.eval_ctm]
     else:
@@ -96,7 +114,15 @@ def main():
 
     for ctm_file in ctm_files:
         segments, num_lines = get_segments(ctm_file)
-        split_ctm(ctm_file, segments, num_lines, args.output_dir)
+
+        if segments[0].endswith('Line'):
+            abbrev = True
+        else:
+            abbrev = False
+
+        split_ctm(ctm_file, segments, num_lines, args.output_dir, abbrev)
+
 
 if __name__ == '__main__':
-    main()
+    args = parse_arguments(sys.argv[1:])
+    main(args)

@@ -77,8 +77,7 @@ def abbreviate_segment(segment_name):
         raise Exception('Unexpected segment name ending')
 
     segment_name = 'BPL{}'.format(segment_name[10:stop_point])
-    segment_name.replace('-', '_')
-    return segment_name
+    return segment_name.replace('_', '-')
 
 def num_lines_in_file(file_name):
     """ Count the number of lines in a file, return num lines is zero if the file is empty """

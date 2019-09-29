@@ -257,8 +257,8 @@ def remove_location_indicator(subword_with_location, apostrophe_embedding):
             if len(subword_split) == 1:
                 clean_subword_list.append(subword_split[0])
             else:
-                clean_subword, apostrophe = self.__clean_subword_split(subword_split)
-                if self.apostrophe_embedding:
+                clean_subword, apostrophe = clean_subword_split(subword_split)
+                if apostrophe_embedding:
                     clean_subword_list.append(clean_subword)
                     if apostrophe:
                         clean_subword_list.append(apostrophe)

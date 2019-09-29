@@ -59,20 +59,19 @@ def main():
     """Main function for computing the statistics."""
     parser = argparse.ArgumentParser(description='generate lattice paths')
     parser.add_argument(
-        '-t', '--train-file', type=str, required=True, 
+        '-t', '--train-file', type=str, required=True,
         help='Full path to a text file with the training set lattices'
     )
     parser.add_argument(
-        '-v', '--validation-file', type=str, required=True, 
+        '-v', '--validation-file', type=str, required=True,
         help='Full path to a text file with the cross validation set lattices'
     )
     parser.add_argument(
-        '-d', '--dest-dir', type=str, required=True, 
+        '-d', '--dest-dir', type=str, required=True,
         help='Full path to the directory in which to save the mean and variance stats.'
     )
     args = parser.parse_args()
 
-    
     mean, variance = compute_stats(args.train_file, args.validation_file)
     mask = range(0, 50)
     mean[mask] = 0.0

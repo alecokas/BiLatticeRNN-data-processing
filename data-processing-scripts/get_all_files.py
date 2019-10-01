@@ -52,6 +52,7 @@ def main(args):
             target=os.path.join(args.target_dest, lst_name),
             names_list=subset_names
         )
+
 def parse_arguments(args_to_parse):
     """ Parse the command line arguments. """
     description = ""

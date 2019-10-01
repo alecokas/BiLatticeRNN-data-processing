@@ -44,7 +44,7 @@ def cn_pass_lev(cn_path, np_cn_path, start_frame, ctm_file, coeff=0.5):
             clipped_indices.append(j)
     return clipped_indices, clipped_seq, edge_labels
 
-def label(lattice_path, ctm_dir, dst_dir, baseline_dict, np_conf_dir, lev, threshold=0.1):
+def label(lattice_path, ctm_dir, dst_dir, baseline_dict, np_conf_dir, threshold=0.1):
     """Read HTK confusion networks and label each arc."""
     name = lattice_path.split('/')[-1].split('.')[0]
     np_lattice_path = os.path.join(np_conf_dir, name + '.npz')
@@ -56,12 +56,7 @@ def label(lattice_path, ctm_dir, dst_dir, baseline_dict, np_conf_dir, lev, thres
         ctm_file = os.path.join(ctm_dir, prefix + '.npz')
         try:
             start_frame = int(name_parts[-2])/100.
-            
-            if lev:
-                indices, seq_1, edge_labels = cn_pass_lev(lattice_path, np_lattice_path, start_frame, ctm_file, threshold)
-            else:
-                # TODO: Don't think this is was implemented correctly, so I have commented it out
-                raise NotImplementedError('Pre-existing code used cn_pass(), which does not return anything and so I do not trust this function')
+            indices, seq_1, edge_labels = cn_pass_lev(lattice_path, np_lattice_path, start_frame, ctm_file, threshold)
             target = np.array(edge_labels, dtype='f')
             print("%s\t\t%f" %(name, np.mean(target)))
             ref, seq_2 = baseline_dict[name]
@@ -109,9 +104,6 @@ def main():
         help='Cut-off threshold for tagging decision',
         type=float, default=0.1
     )
-    parser.add_argument(
-        '--lev', dest='lev', action='store_true', default=False, help='Use Levenshtein distance metric for arc tagging'
-    )
     args = parser.parse_args()
 
     dst_dir = os.path.join(args.dst_dir, 'target_overlap_{}'.format(args.threshold))
@@ -133,7 +125,7 @@ def main():
                 cn_list.append(path_to_lat.strip())
 
     for cn in cn_list:
-        label(cn, ctm_dir, dst_dir, baseline_dict, np_conf_dir, args.lev, args.threshold)
+        label(cn, ctm_dir, dst_dir, baseline_dict, np_conf_dir, args.threshold)
 
 if __name__ == '__main__':
     main()

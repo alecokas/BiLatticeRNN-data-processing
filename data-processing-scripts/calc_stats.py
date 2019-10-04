@@ -9,6 +9,11 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 
+
+WORD_EMBEDDING_LENGTH = 50
+SUBWORD_EMBEDDING_LENGTH = 4
+
+
 def update(cur_aggregate, new_value):
     """For a new value new_value, compute the new count, new mean, the new m_2.
     * mean accumulates the mean of the entire dataset.
@@ -34,25 +39,55 @@ def finalize(cur_aggregate):
 
 def compute_stats(*args):
     """Compute the statistics across entire dataset."""
-    aggregate = None
+    word_aggregate = None
+    subword_aggregate = None
     for data_file in args:
         with open(data_file, 'r') as file_in:
             iterator = tqdm(file_in.readlines(), dynamic_ncols=True)
             for line in iterator:
                 lattice = np.load(line.strip())
-                data = lattice['edge_data']
+                word_data = lattice['edge_data']
+                if 'grapheme_data' in lattice:
+                    grapheme_lattice = True
+                    subword_data = lattice['grapheme_data']
+                else:
+                    grapheme_lattice = False
                 # Backward compatibility
                 try:
                     ignore = list(lattice['ignore'])
                 except KeyError:
                     ignore = []
-                for i, entry in enumerate(data):
+                for i, (word_entry, subword_entry) in enumerate(zip(word_data, subword_data)):
                     if i not in ignore:
-                        if aggregate is None:
-                            aggregate = (1, entry, np.zeros(entry.shape[0]))
+                        if word_aggregate is None:
+                            # (count, mean, squared distance from mean)
+                            word_aggregate = (1, word_entry, np.zeros(word_entry.shape[0]))
+                            # sub-word initialisation and aggregation
+                            if grapheme_lattice:
+                                subword_aggregate = (1, subword_entry[0,:], np.zeros(subword_entry.shape[1]))
+                                for subword in subword_entry[1:,:]:
+                                    subword_aggregate = update(subword_aggregate, subword)
                         else:
-                            aggregate = update(aggregate, entry)
-    mean, variance = finalize(aggregate)
+                            word_aggregate = update(word_aggregate, word_entry)
+                            if grapheme_lattice:
+                                for subword in subword_entry:
+                                    subword_aggregate = update(subword_aggregate, subword)
+
+    word_mean, word_variance = finalize(word_aggregate)
+    if grapheme_lattice:
+        subword_mean, subword_variance = finalize(subword_aggregate)
+    else:
+        subword_mean = None
+        subword_variance = None
+    return word_mean, word_variance, subword_mean, subword_variance
+
+def mask(mean, variance, mask_length):
+    """ Mask the embedding with a mean of zero and variance of 1 so that
+        whitening does not modify the embedding.
+    """
+    mask = range(0, mask_length)
+    mean[mask] = 0.0
+    variance[mask] = 1.0
     return mean, variance
 
 def main():
@@ -72,12 +107,22 @@ def main():
     )
     args = parser.parse_args()
 
-    mean, variance = compute_stats(args.train_file, args.validation_file)
-    mask = range(0, 50)
-    mean[mask] = 0.0
-    variance[mask] = 1.0
+    word_mean, word_variance, subword_mean, subword_variance = compute_stats(args.train_file, args.validation_file)
     stats_file = os.path.join(args.dest_dir, 'stats.npz')
-    np.savez(stats_file, mean=np.reshape(mean, (1, -1)), std=np.reshape(np.sqrt(variance), (1, -1)))
+
+    word_mean, word_variance = mask(word_mean, word_variance, WORD_EMBEDDING_LENGTH)
+
+    if subword_mean is not None and subword_variance is not None:
+        subword_mean, subword_variance = mask(subword_mean, subword_variance, SUBWORD_EMBEDDING_LENGTH)
+        np.savez(
+            stats_file,
+            mean=np.reshape(word_mean, (1, -1)),
+            std=np.reshape(np.sqrt(word_variance), (1, -1)),
+            subword_mean=np.reshape(subword_mean, (1, -1)),
+            subword_std=np.reshape(np.sqrt(subword_variance), (1, -1))
+        )
+    else:
+        np.savez(stats_file, mean=np.reshape(word_mean, (1, -1)), std=np.reshape(np.sqrt(word_variance), (1, -1)))
 
 if __name__ == '__main__':
     main()

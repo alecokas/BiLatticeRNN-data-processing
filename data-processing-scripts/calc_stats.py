@@ -66,12 +66,14 @@ def compute_stats(*args):
                             if grapheme_lattice:
                                 subword_aggregate = (1, subword_entry[0,:], np.zeros(subword_entry.shape[1]))
                                 for subword in subword_entry[1:,:]:
-                                    subword_aggregate = update(subword_aggregate, subword)
+                                    if not all(feature == 0 for feature in subword):
+                                        subword_aggregate = update(subword_aggregate, subword)
                         else:
                             word_aggregate = update(word_aggregate, word_entry)
                             if grapheme_lattice:
                                 for subword in subword_entry:
-                                    subword_aggregate = update(subword_aggregate, subword)
+                                    if not all(feature == 0 for feature in subword):
+                                        subword_aggregate = update(subword_aggregate, subword)
 
     word_mean, word_variance = finalize(word_aggregate)
     if grapheme_lattice:

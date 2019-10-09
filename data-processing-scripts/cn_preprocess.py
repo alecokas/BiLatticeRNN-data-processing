@@ -47,10 +47,11 @@ class CN:
                 for _ in range(num_arcs):
                     line = file_in.readline().split()
                     # W=word s=start e=end p=posterior (Optionally d=grapheme-information)
-                    if self.ignore_graphemes:
-                        line = line[:-1]
                     if len(line) == 5:
                         self.has_graphemes = True
+                    if self.ignore_graphemes and self.has_graphemes:
+                        line = line[:-1]
+                        self.has_graphemes = False
                     if len(line) == 4 or len(line) == 5:
                          self.cn_arcs.append([item.split('=')[1] for item in line])
                     else:

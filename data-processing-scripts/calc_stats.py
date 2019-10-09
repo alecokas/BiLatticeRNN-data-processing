@@ -52,6 +52,9 @@ def compute_stats(*args):
                     subword_data = lattice['grapheme_data']
                 else:
                     grapheme_lattice = False
+                    # A dummy variable to iterate since we do not have any actual subword data
+                    subword_data = np.zeros_like(word_data)
+
                 # Backward compatibility
                 try:
                     ignore = list(lattice['ignore'])

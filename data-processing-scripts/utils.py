@@ -215,7 +215,6 @@ def remove_pronunciation(subword, delimiter=';'):
     """
     split_subword = subword.split(delimiter)
     if len(split_subword) == 1:
-        print("Warning: No pronunciation after the '{}' to include".format(delimiter))
         return subword
     elif len(split_subword) > 2:
         raise Exception("Expected a maximum of one occurence of '{}'. Found {}".format(delimiter, len(split_subword)))

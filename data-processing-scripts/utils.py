@@ -118,7 +118,7 @@ def len_subword_features():
     LEN_GRAPHEME_FEATURES = 5
     return LEN_GRAPHEME_FEATURES
 
-def get_grapheme_info(grapheme_info, subword_embedding, apostrophe_embedding):
+def get_grapheme_info(grapheme_info, subword_embedding, apostrophe_embedding, keep_pronunciation=True):
     """ Extract grapheme information and store it in an array with the following form:
         ((emb-0-0, emb-0-1, emb-0-2, emb-0-3, dur-0)
             .       .         .        .       .
@@ -131,14 +131,14 @@ def get_grapheme_info(grapheme_info, subword_embedding, apostrophe_embedding):
     for i, subword_info in enumerate(subword_list):
         subword, subword_dur = subword_info.split(',')[:2]
         # token = strip_phone(subword, 1, False)
-        token = strip_subword(subword, 1, False, apostrophe_embedding)
+        token = strip_subword(subword, 1, False, apostrophe_embedding, keep_pronunciation)
         if subword_embedding is None:
             raise Exception('No subword embedding!')
         else:
             grapheme_feature_list[i, :] = np.append(subword_embedding[token], subword_dur)
     return grapheme_feature_list
 
-def strip_subword(subword_info, subword_context_width, incl_posn_info, apostrophe_embedding):
+def strip_subword(subword_info, subword_context_width, incl_posn_info, apostrophe_embedding, keep_pronunciation):
     """ Strip subwords of context and optionally the location indicator
 
         Arguments:
@@ -151,16 +151,17 @@ def strip_subword(subword_info, subword_context_width, incl_posn_info, apostroph
 
     itemised_subword_info = re.split(r'\+|\-', subword_info)
     if len(itemised_subword_info) == 1:
-        return itemised_subword_info[0] if incl_posn_info else remove_location_indicator(itemised_subword_info[0], apostrophe_embedding)
+        subword = itemised_subword_info[0] if incl_posn_info else remove_location_indicator(itemised_subword_info[0], apostrophe_embedding)
     elif len(itemised_subword_info) == 3:
         if subword_context_width > 1:
             # Assume that if the context is 2 (bigram), we want the include the preceding subword unit
             stop = subword_context_width
-            return ''.join(itemised_subword_info[:stop]) if incl_posn_info else remove_location_indicator(itemised_subword_info[:stop], apostrophe_embedding)
+            subword = ''.join(itemised_subword_info[:stop]) if incl_posn_info else remove_location_indicator(itemised_subword_info[:stop], apostrophe_embedding)
         else:
-            return itemised_subword_info[1] if incl_posn_info else remove_location_indicator(itemised_subword_info[1], apostrophe_embedding)
+            subword = itemised_subword_info[1] if incl_posn_info else remove_location_indicator(itemised_subword_info[1], apostrophe_embedding)
     else:
         raise Exception('The subword unit length should be 1 or 3, but found {}'.format(len(itemised_subword_info)))
+    return subword if keep_pronunciation else remove_pronunciation(subword)
 
 def remove_location_indicator(subword_with_location, apostrophe_embedding):
     """ Strip location indicators from a string or strings within a list and return the result as a string
@@ -208,6 +209,17 @@ def clean_subword_split(raw_subword_split):
 
     raw_subword = raw_subword_split[0] + pronunciation
     return raw_subword, apostrophe
+
+def remove_pronunciation(subword, delimiter=';'):
+    """ Remove any pronunciation after the delimiter.
+    """
+    split_subword = subword.split(delimiter)
+    if len(split_subword) == 1:
+        print("Warning: No pronunciation after the '{}' to include".format(delimiter))
+        return subword
+    elif len(split_subword) > 2:
+        raise Exception("Expected a maximum of one occurence of '{}'. Found {}".format(delimiter, len(split_subword)))
+    return split_subword[0]
 
 def load_wordvec(path):
     """Load pre-computed word vectors.

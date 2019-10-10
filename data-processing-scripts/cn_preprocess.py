@@ -60,7 +60,8 @@ class CN:
         self.num_arcs.reverse()
 
     def convert_to_lattice(self, wordvec_dict, subword_embedding, dst_dir, log,dec_tree,
-                           ignore_time_seg, processed_file_list_path=None, embed_apostrophe=False):
+                           ignore_time_seg, processed_file_list_path=None, embed_apostrophe=False,
+                           keep_pronunciation=True):
         """Convert confusion network object to lattice `.npz` format."""
         oov = set()
         utils.mkdir(dst_dir)
@@ -134,7 +135,12 @@ class CN:
 
                 # Deal with any grapheme data if required:
                 if self.has_graphemes:
-                    grapheme_feature_array = utils.get_grapheme_info(self.cn_arcs[i][4], subword_embedding, embed_apostrophe)
+                    grapheme_feature_array = utils.get_grapheme_info(
+                        grapheme_info=self.cn_arcs[i][4],
+                        subword_embedding=subword_embedding,
+                        apostrophe_embedding=embed_apostrophe,
+                        keep_pronunciation=keep_pronunciation
+                    )
                     grapheme_data.append(grapheme_feature_array)
 
         npz_file_name = os.path.join(dst_dir, self.name + '.npz')
@@ -163,7 +169,8 @@ class CN:
         return oov
 
 def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_tree,
-                   ignore_time_seg, processed_file_list_path=None, embed_apostrophe=False):
+                   ignore_time_seg, processed_file_list_path=None, embed_apostrophe=False,
+                   keep_pronunciation=True):
     """Process a single confusion network.
 
     Arguments:
@@ -177,7 +184,8 @@ def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_t
     confusion_net = CN(cn_path)
     oov = confusion_net.convert_to_lattice(
         wordvec_dict, subword_embedding, dst_dir, log, dec_tree,
-        ignore_time_seg, processed_file_list_path, embed_apostrophe
+        ignore_time_seg, processed_file_list_path, embed_apostrophe,
+        keep_pronunciation
     )
     return oov
 
@@ -229,6 +237,10 @@ def main():
     )
     parser.set_defaults(embed_apostrophe=False)
     parser.add_argument(
+        '--keep-pronunciation', dest='keep_pronunciation', action='store_true'
+    )
+    parser.set_defaults(keep_pronunciation=False)
+    parser.add_argument(
         '--ignore_time_seg', dest='ignore_time_seg', required=False, default=False
     )
     args = parser.parse_args()
@@ -270,7 +282,7 @@ def main():
             oov = process_one_cn(
                 cn, args.dst_dir, wordvec, subword_embedding, args.log,
                 args.dec_tree, args.ignore_time_seg, processed_subset_list[i],
-                args.embed_apostrophe
+                args.embed_apostrophe, args.keep_pronunciation
             )
             all_oov.update(oov)
     if not all_oov:

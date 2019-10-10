@@ -13,10 +13,6 @@ from trees import Tree
 import utils
 
 
-LEN_GRAPHEME_FEATURES = 5
-POSN_INFO_LEN = 2
-APOSTROPHE_TOKEN = 'A'
-
 class CN:
     """Confusion networks from file."""
 
@@ -145,7 +141,7 @@ class CN:
         if self.has_graphemes:
             # go through the array now and put it in a big masked array so it is just ine simple numpy array (I, J, F)
             max_grapheme_seq_length = utils.longest_grapheme_sequence(grapheme_data)
-            padded_grapheme_data = np.empty((len(grapheme_data), max_grapheme_seq_length, LEN_GRAPHEME_FEATURES))
+            padded_grapheme_data = np.empty((len(grapheme_data), max_grapheme_seq_length, utils.len_subword_features()))
             mask = np.empty_like(padded_grapheme_data, dtype=bool)
 
             for arc_num, grapheme_seq in enumerate(grapheme_data):

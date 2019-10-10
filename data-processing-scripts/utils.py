@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """A range of utility functions."""
 
-import os
-import sys
-import random
-import string
 import logging
+import numpy as np
+import os
+import random
+import re
+import string
+import sys
+
+POSN_INFO_LEN = 2
+APOSTROPHE_TOKEN = 'A'
 
 def mkdir(directory):
     """Create directory if not exist."""
@@ -27,10 +32,10 @@ def savecmd(directory, cmd):
         file.write(cmdsep)
 
 def get_logger(level, log_file_name=None):
-    '''Set logger object for stdout logging.
+    """ Set logger object for stdout logging.
         Input: verbosity level specified in argument
         Return: logger object
-    '''
+    """
     infoformat = '%(asctime)s %(levelname)-7s %(message)s'
     dateformat = '%Y-%m-%d %H:%M'
     if log_file_name is not None:
@@ -97,3 +102,154 @@ def remove_file(file_path):
         os.remove(file_path)
     except OSError:
         pass
+
+def chunks(l, n):
+    """ Yield successive n-sized chunks from list l. """
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+def append_to_file(item_to_append, target_file):
+    with open(target_file, "a") as file:
+        file.write(item_to_append + '\n')
+
+def len_subword_features():
+    """ TODO: There is probably a better way to centralize this """
+    # Grapheme embedding (4), grapheme duration (1)
+    LEN_GRAPHEME_FEATURES = 5
+    return LEN_GRAPHEME_FEATURES
+
+def get_grapheme_info(grapheme_info, subword_embedding, apostrophe_embedding):
+    """ Extract grapheme information and store it in an array with the following form:
+        ((emb-0-0, emb-0-1, emb-0-2, emb-0-3, dur-0)
+            .       .         .        .       .
+            .       .         .        .       .
+            .       .         .        .       .
+        (emb-J-0, emb-J-1, emb-J-2, emb-J-3, dur-J))
+    """
+    subword_list = grapheme_info.split(':')[1:-1]
+    grapheme_feature_list = np.empty((len(subword_list), len_subword_features()))
+    for i, subword_info in enumerate(subword_list):
+        subword, subword_dur = subword_info.split(',')[:2]
+        # token = strip_phone(subword, 1, False)
+        token = strip_subword(subword, 1, False, apostrophe_embedding)
+        if subword_embedding is None:
+            raise Exception('No subword embedding!')
+        else:
+            grapheme_feature_list[i, :] = np.append(subword_embedding[token], subword_dur)
+    return grapheme_feature_list
+
+def strip_subword(subword_info, subword_context_width, incl_posn_info, apostrophe_embedding):
+    """ Strip subwords of context and optionally the location indicator
+
+        Arguments:
+            subword_info: String with the full subword context information and location indicators.
+            subword_context_width: The subword context width as an integer (the number of grams to consider)
+            incl_posn_info: A boolean indicator for whether or not to include the subword position information (^I, ^M, ^F)
+    """
+    if subword_context_width > 3:
+        raise Exception('The subword context width cannot be greater than 3.')
+
+    itemised_subword_info = re.split(r'\+|\-', subword_info)
+    if len(itemised_subword_info) == 1:
+        return itemised_subword_info[0] if incl_posn_info else remove_location_indicator(itemised_subword_info[0], apostrophe_embedding)
+    elif len(itemised_subword_info) == 3:
+        if subword_context_width > 1:
+            # Assume that if the context is 2 (bigram), we want the include the preceding subword unit
+            stop = subword_context_width
+            return ''.join(itemised_subword_info[:stop]) if incl_posn_info else remove_location_indicator(itemised_subword_info[:stop], apostrophe_embedding)
+        else:
+            return itemised_subword_info[1] if incl_posn_info else remove_location_indicator(itemised_subword_info[1], apostrophe_embedding)
+    else:
+        raise Exception('The subword unit length should be 1 or 3, but found {}'.format(len(itemised_subword_info)))
+
+def remove_location_indicator(subword_with_location, apostrophe_embedding):
+    """ Strip location indicators from a string or strings within a list and return the result as a string
+
+        Arguments:
+            subword_with_location: Either a string or list containing the raw subword unit with location indicators.
+    """
+    if isinstance(subword_with_location, list):
+        clean_subword_list = []
+        for subword in subword_with_location:
+            subword_split = subword.split('^')
+            if len(subword_split) == 1:
+                clean_subword_list.append(subword_split[0])
+            else:
+                clean_subword, apostrophe = clean_subword_split(subword_split)
+                if apostrophe_embedding:
+                    clean_subword_list.append(clean_subword)
+                    if apostrophe:
+                        clean_subword_list.append(apostrophe)
+                else:
+                    clean_subword_list.append(clean_subword + apostrophe)
+        return ' '.join(clean_subword_list)
+    else:
+        subword_split = subword_with_location.split('^')
+        if len(subword_split) == 1:
+            return subword_split[0]
+        else:
+            clean_subword, apostrophe = clean_subword_split(subword_split)
+
+            if apostrophe is not None:
+                if apostrophe_embedding:
+                    return ' '.join([clean_subword, apostrophe])
+                else:
+                    return ''.join([clean_subword, apostrophe])
+            else:
+                return clean_subword
+
+def clean_subword_split(raw_subword_split):
+    pronunciation = raw_subword_split[1][POSN_INFO_LEN - 1:]
+    if pronunciation.endswith(APOSTROPHE_TOKEN):
+        pronunciation = pronunciation.replace(APOSTROPHE_TOKEN, '')
+        apostrophe = APOSTROPHE_TOKEN
+    else:
+        apostrophe = None
+
+    raw_subword = raw_subword_split[0] + pronunciation
+    return raw_subword, apostrophe
+
+def load_wordvec(path):
+    """Load pre-computed word vectors.
+
+    Arguments:
+        path {string} -- path to `.npy` file contains a dictionary of all words
+            and their word vectors
+
+    Returns:
+        dictionary -- word vector
+    """
+    wordvec = np.load(path).item()
+    return wordvec
+
+def longest_grapheme_sequence(grapheme_list):
+    """ Determine the length of the longest grapheme sequence in the provided list.
+    
+        Arguments:
+            grapheme_list: Python list of the grapheme features
+    """
+    max_length_seq = -1
+    for arc in grapheme_list:
+        seq_length = arc.shape[0]
+        if seq_length > max_length_seq:
+            max_length_seq = seq_length
+    if max_length_seq == -1:
+        raise Exception('max_length never updated')
+    return max_length_seq
+
+def pad_subword_sequence(subword_seq, max_seq_length):
+    """ The subword sequence (graphemic / phonetic) can be of variable length. In order to store
+        this data in a numpy array, one pads and masks the subword dimension to the max sequence
+        length.
+
+        subword_seq: numpy array with dimensions (graphemes, features)
+        max_seq_length: The length of the maximum subword sequence
+    """
+    pad_count = max_seq_length - subword_seq.shape[0]
+    zero_pads = np.zeros((pad_count, len_subword_features()))
+    padded_subword_seq = np.concatenate((subword_seq, zero_pads), axis=0)
+
+    valid_array = np.ones_like(zero_pads, dtype=bool)
+    invalid_array = np.zeros_like(subword_seq, dtype=bool)
+    mask = np.concatenate((valid_array, invalid_array), axis=0)
+    return padded_subword_seq, mask

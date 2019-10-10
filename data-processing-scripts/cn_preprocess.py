@@ -63,7 +63,8 @@ class CN:
         self.cn_arcs.reverse()
         self.num_arcs.reverse()
 
-    def convert_to_lattice(self, wordvec_dict, subword_embedding, dst_dir, log, dec_tree, ignore_time_seg, processed_file_list_path=None, embed_apostrophe=False):
+    def convert_to_lattice(self, wordvec_dict, subword_embedding, dst_dir, log,dec_tree,
+                           ignore_time_seg, processed_file_list_path=None, embed_apostrophe=False):
         """Convert confusion network object to lattice `.npz` format."""
         oov = set()
         utils.mkdir(dst_dir)
@@ -306,7 +307,8 @@ def load_wordvec(path):
     wordvec = np.load(path).item()
     return wordvec
 
-def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_tree, ignore_time_seg, processed_file_list_path=None, embed_apostrophe=False):
+def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_tree,
+                   ignore_time_seg, processed_file_list_path=None, embed_apostrophe=False):
     """Process a single confusion network.
 
     Arguments:
@@ -318,7 +320,10 @@ def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_t
     name = cn_path.split('/')[-1].split('.')[0] + '.npz'
     LOGGER.info(name)
     confusion_net = CN(cn_path)
-    oov = confusion_net.convert_to_lattice(wordvec_dict, subword_embedding, dst_dir, log, dec_tree, ignore_time_seg, processed_file_list_path, embed_apostrophe)
+    oov = confusion_net.convert_to_lattice(
+        wordvec_dict, subword_embedding, dst_dir, log, dec_tree,
+        ignore_time_seg, processed_file_list_path, embed_apostrophe
+    )
     return oov
 
 def main():

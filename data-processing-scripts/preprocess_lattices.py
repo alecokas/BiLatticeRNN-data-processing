@@ -26,7 +26,7 @@ def read_lattice(lattice_path, subword_embedding=None, embed_apostrophe=False):
     Arguments:
         lattice_path {string} -- absolute path of a compressed lattice
             in `.lat.gz` format
-        subword_embedding -- subword embeddings
+        subword_embedding -- subword embeddings store as a dictionary
 
     Returns:
         nodes {list} -- indexed by nodeID, each element is [time, word]
@@ -80,9 +80,7 @@ def read_lattice(lattice_path, subword_embedding=None, embed_apostrophe=False):
                 # Extract a grapheme feature vector of dimensions: (num_graphemes, num_features)
                 if subword_embedding is not None:
                     grapheme_feature_array = utils.get_grapheme_info(line[5].split('=')[1], subword_embedding, embed_apostrophe)
-                else:
-                    grapheme_feature_array = [np.zeros(utils.len_subword_features())]
-                grapheme_data.append(grapheme_feature_array)
+                    grapheme_data.append(grapheme_feature_array)
                 post_idx = 6
             else:
                 post_idx = 5
@@ -110,16 +108,19 @@ def read_lattice(lattice_path, subword_embedding=None, embed_apostrophe=False):
                 parent_2_child[parent][child] = edge_id
 
     # go through the array now and put it in a big masked array so it is just ine simple numpy array (I, J, F)
-    max_grapheme_seq_length = utils.longest_grapheme_sequence(grapheme_data)
-    padded_grapheme_data = np.empty((len(grapheme_data), max_grapheme_seq_length, utils.len_subword_features()))
-    mask = np.empty_like(padded_grapheme_data, dtype=bool)
+    if subword_embedding is not None:
+        max_grapheme_seq_length = utils.longest_grapheme_sequence(grapheme_data)
+        padded_grapheme_data = np.empty((len(grapheme_data), max_grapheme_seq_length, utils.len_subword_features()))
+        mask = np.empty_like(padded_grapheme_data, dtype=bool)
 
-    for arc_num, grapheme_seq in enumerate(grapheme_data):
-        padded_grapheme_data[arc_num, :, :], mask[arc_num, :, :] = utils.pad_subword_sequence(grapheme_seq, max_grapheme_seq_length)
+        for arc_num, grapheme_seq in enumerate(grapheme_data):
+            padded_grapheme_data[arc_num, :, :], mask[arc_num, :, :] = utils.pad_subword_sequence(grapheme_seq, max_grapheme_seq_length)
 
-    masked_grapheme_data = ma.masked_array(padded_grapheme_data, mask=mask, fill_value=-999999)
+        masked_grapheme_data = ma.masked_array(padded_grapheme_data, mask=mask, fill_value=-999999)
 
-    return nodes, edges, dependency, child_2_parent, parent_2_child, masked_grapheme_data
+        return nodes, edges, dependency, child_2_parent, parent_2_child, masked_grapheme_data
+    else:
+        return nodes, edges, dependency, child_2_parent, parent_2_child
 
 def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
                         embed_apostrophe, processed_file_list_path=None):

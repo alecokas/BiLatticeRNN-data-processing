@@ -78,7 +78,10 @@ def read_lattice(lattice_path, subword_embedding=None, embed_apostrophe=False):
                 del line[5]
             if line[5].split('=')[0] == 'd':
                 # Extract a grapheme feature vector of dimensions: (num_graphemes, num_features)
-                grapheme_feature_array = utils.get_grapheme_info(line[5].split('=')[1], subword_embedding, embed_apostrophe)
+                if subword_embedding is not None:
+                    grapheme_feature_array = utils.get_grapheme_info(line[5].split('=')[1], subword_embedding, embed_apostrophe)
+                else:
+                    grapheme_feature_array = [np.zeros(utils.len_subword_features())]
                 grapheme_data.append(grapheme_feature_array)
                 post_idx = 6
             else:

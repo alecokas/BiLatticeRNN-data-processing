@@ -137,7 +137,7 @@ class CN:
                 if self.has_graphemes:
                     grapheme_feature_array = utils.get_grapheme_info(
                         grapheme_info=self.cn_arcs[i][4],
-                        subword_embedding=subword_embedding,
+                        subword_embedding_dict=subword_embedding,
                         apostrophe_embedding=embed_apostrophe,
                         keep_pronunciation=keep_pronunciation
                     )

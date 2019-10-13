@@ -1,5 +1,6 @@
-""" Preprocess lattices from the *.lat.gz format into the processed *.npz format.
+""" Process lattices from the *.lat.gz format into the processed *.npz format.
     At the same time, produce the file list with paths to the processed files.
+    TODO: Introduce functionality for decision tree mapping
 """
 #!/usr/bin/env python3
 
@@ -123,16 +124,17 @@ def read_lattice(lattice_path, subword_embedding=None, embed_apostrophe=False):
         return nodes, edges, dependency, child_2_parent, parent_2_child
 
 def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
-                        embed_apostrophe, processed_file_list_path=None):
-    """Process a single lattice.
+                        embed_apostrophe, uniform_subword_durations,
+                        processed_file_list_path=None):
+    """ Process and save a lattice into *.npz format
 
-    Arguments:
-        lattice_path {str} -- absolute path to lattices `.lat.gz`
-        dst_dir {str} -- absolute path to destination directory
-        wordvec {dict} -- word vector by calling `load_wordvec`
-        subword_embedding: Dictionary with subword embeddings
-        embed_apostrophe: Boolean indicator of whether to embed
-                          apostrophes separately.
+        Arguments:
+            lattice_path: String containing the absolute path to lattices `.lat.gz`
+            dst_dir: Absolute path to destination directory as a string
+            wordvec: The word vector dictionary obtained by calling `load_wordvec`
+            subword_embedding: Dictionary with subword embeddings
+            embed_apostrophe: Boolean indicator of whether to embed
+                              apostrophes separately.
     """
     name = lattice_path.split('/')[-1].split('.')[0] + '.npz'
     print('Processing {}'.format(name))
@@ -180,6 +182,7 @@ def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
 
 def parse_arguments(args_to_parse):
     """ Parse the command line arguments.
+        TODO: Introduce functionality for decision tree mapping
 
         Arguments:
             args_to_parse: CLI arguments to parse
@@ -206,9 +209,10 @@ def parse_arguments(args_to_parse):
         '-p', '--processed-file-list-dir', type=str,
         help='The directory in which to save files with paths to the processed lattices (*.txt).'
     )
-    parser.add_argument(
-        '--embed-apostrophe', dest='embed_apostrophe', action='store_true'
-    )
+    # TODO
+    # parser.add_argument('--uniform-subword-durations', dest='uniform_subword_durations', action='store_true')
+    # parser.set_defaults(uniform_subword_durations=False)
+    parser.add_argument('--embed-apostrophe', dest='embed_apostrophe', action='store_true')
     parser.set_defaults(embed_apostrophe=False)
     parser.add_argument(
         '-v', '--verbose',
@@ -259,7 +263,9 @@ def main(args):
         with Pool(args.num_threads) as pool:
             pool.starmap(process_one_lattice, zip(lattice_list, repeat(dst_dir),
                                                 repeat(wordvec), repeat(subword_embedding),
-                                                repeat(args.embed_apostrophe), repeat(processed_subset_list[i]))
+                                                repeat(args.embed_apostrophe),
+                                                repeat(args.uniform_subword_durations),
+                                                repeat(processed_subset_list[i]))
             )
 
 if __name__ == '__main__':

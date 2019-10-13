@@ -118,7 +118,8 @@ def len_subword_features():
     LEN_GRAPHEME_FEATURES = 5
     return LEN_GRAPHEME_FEATURES
 
-def get_grapheme_info(grapheme_info, subword_embedding_dict, apostrophe_embedding, keep_pronunciation=True):
+def get_grapheme_info(grapheme_info, subword_embedding_dict, apostrophe_embedding,
+                      keep_pronunciation=True, uniform_durations=False):
     """ Extract grapheme information and store it in an array with the following form:
         ((emb-0-0, emb-0-1, emb-0-2, emb-0-3, dur-0)
             .       .         .        .       .
@@ -135,6 +136,11 @@ def get_grapheme_info(grapheme_info, subword_embedding_dict, apostrophe_embeddin
             raise Exception('No subword embedding!')
         else:
             grapheme_feature_list[i, :] = np.append(subword_embedding_dict[token], subword_dur)
+    if uniform_durations:
+        # Sum and evenly distribute the duration
+        word_dur = sum(grapheme_feature_list[:,-1])
+        num_graphemes = grapheme_feature_list.shape[0]
+        grapheme_feature_list[: -1] = word_dur / num_graphemes
     return grapheme_feature_list
 
 def strip_subword(subword_info, subword_context_width, incl_posn_info, apostrophe_embedding, keep_pronunciation):

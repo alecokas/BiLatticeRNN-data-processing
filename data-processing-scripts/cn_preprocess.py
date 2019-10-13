@@ -61,7 +61,7 @@ class CN:
 
     def convert_to_lattice(self, wordvec_dict, subword_embedding, dst_dir, log,dec_tree,
                            ignore_time_seg, processed_file_list_path=None, embed_apostrophe=False,
-                           keep_pronunciation=True):
+                           keep_pronunciation=True, uniform_subword_durations=False):
         """Convert confusion network object to lattice `.npz` format."""
         oov = set()
         utils.mkdir(dst_dir)
@@ -139,7 +139,8 @@ class CN:
                         grapheme_info=self.cn_arcs[i][4],
                         subword_embedding_dict=subword_embedding,
                         apostrophe_embedding=embed_apostrophe,
-                        keep_pronunciation=keep_pronunciation
+                        keep_pronunciation=keep_pronunciation,
+                        uniform_durations=uniform_subword_durations
                     )
                     grapheme_data.append(grapheme_feature_array)
 
@@ -170,7 +171,7 @@ class CN:
 
 def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_tree,
                    ignore_time_seg, processed_file_list_path=None, embed_apostrophe=False,
-                   keep_pronunciation=True):
+                   keep_pronunciation=True, uniform_subword_durations=False):
     """Process a single confusion network.
 
     Arguments:
@@ -178,6 +179,8 @@ def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_t
         dst_dir {str} -- absolute path to destination directory
         wordvec_dict {dict} -- word vector by calling `load_wordvec`
         dec_tree {str} -- absolute path to decision tree object
+        uniform_subword_durations: Boolean indicator of whether to assume a
+                                   uniform subword duration split.
     """
     name = cn_path.split('/')[-1].split('.')[0] + '.npz'
     LOGGER.info(name)
@@ -185,7 +188,7 @@ def process_one_cn(cn_path, dst_dir, wordvec_dict, subword_embedding, log, dec_t
     oov = confusion_net.convert_to_lattice(
         wordvec_dict, subword_embedding, dst_dir, log, dec_tree,
         ignore_time_seg, processed_file_list_path, embed_apostrophe,
-        keep_pronunciation
+        keep_pronunciation, uniform_subword_durations
     )
     return oov
 
@@ -229,20 +232,18 @@ def main():
         help='number of threads to use for concurrency',
         type=int, default=30
     )
-    parser.add_argument(
-        '--decision-tree', type=str, dest='dec_tree', required=False, default='NONE'
-    )
-    parser.add_argument(
-        '--embed-apostrophe', dest='embed_apostrophe', action='store_true'
-    )
+    parser.add_argument('--decision-tree', type=str, dest='dec_tree', required=False, default='NONE')
+
+    parser.add_argument('--uniform-subword-durations', dest='uniform_subword_durations', action='store_true')
+    parser.set_defaults(uniform_subword_durations=False)
+
+    parser.add_argument('--embed-apostrophe', dest='embed_apostrophe', action='store_true')
     parser.set_defaults(embed_apostrophe=False)
-    parser.add_argument(
-        '--keep-pronunciation', dest='keep_pronunciation', action='store_true'
-    )
+
+    parser.add_argument('--keep-pronunciation', dest='keep_pronunciation', action='store_true')
     parser.set_defaults(keep_pronunciation=False)
-    parser.add_argument(
-        '--ignore_time_seg', dest='ignore_time_seg', required=False, default=False
-    )
+
+    parser.add_argument('--ignore_time_seg', dest='ignore_time_seg', required=False, default=False)
     args = parser.parse_args()
 
     global LOGGER
@@ -282,7 +283,7 @@ def main():
             oov = process_one_cn(
                 cn, args.dst_dir, wordvec, subword_embedding, args.log,
                 args.dec_tree, args.ignore_time_seg, processed_subset_list[i],
-                args.embed_apostrophe, args.keep_pronunciation
+                args.embed_apostrophe, args.keep_pronunciation, args.uniform_subword_durations
             )
             all_oov.update(oov)
     if not all_oov:

@@ -140,7 +140,7 @@ def get_grapheme_info(grapheme_info, subword_embedding_dict, apostrophe_embeddin
         # Sum and evenly distribute the duration
         word_dur = sum(grapheme_feature_list[:,-1])
         num_graphemes = grapheme_feature_list.shape[0]
-        grapheme_feature_list[: -1] = word_dur / num_graphemes
+        grapheme_feature_list[:, -1] = word_dur / num_graphemes
     return grapheme_feature_list
 
 def strip_subword(subword_info, subword_context_width, incl_posn_info, apostrophe_embedding, keep_pronunciation):

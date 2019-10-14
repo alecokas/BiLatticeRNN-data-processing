@@ -225,7 +225,8 @@ def main(args):
     cn_set = set_of_processed_file_names(directory_to_search=args.confusion_network_dir)
     lat_set = set_of_processed_file_names(directory_to_search=args.lattice_dir)
 
-    reverse_wordvec = np.load('reverse_wordvec.npy').item()
+    # 'reverse_wordvec.npy'
+    reverse_wordvec = np.load(args.reverse_wordvec).item()
 
     for file_name in cn_set:
         if file_name not in lat_set:
@@ -245,7 +246,7 @@ def parse_arguments(args_to_parse):
     """ Parse the command line arguments.
     """
     description = "Match each arc in a confusion network with the corresponding " + \
-                  "arc in the corresponding lattice to extract grapheme information"
+                  "arc in the corresponding lattice to extract additional information"
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument(

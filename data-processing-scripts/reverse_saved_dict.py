@@ -21,8 +21,8 @@ def parse_arguments(args_to_parse):
     return args
 
 def main(args):
-    wordvec = np.load(args.input_file).items()
-    reversed_wordvec = {v: k for k, v in wordvec.items()}
+    wordvec = np.load(args.input_file).item()
+    reversed_wordvec = {str(v): k for k, v in wordvec.items()}
     np.save(args.output_file, reversed_wordvec)
 
 if __name__=='__main__':

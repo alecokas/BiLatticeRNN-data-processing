@@ -124,7 +124,7 @@ def read_lattice(lattice_path, subword_embedding=None, embed_apostrophe=False):
         return nodes, edges, dependency, child_2_parent, parent_2_child
 
 def process_one_lattice(lattice_path, dst_dir, wordvec, subword_embedding,
-                        embed_apostrophe, uniform_subword_durations,
+                        embed_apostrophe, uniform_subword_durations=False,
                         processed_file_list_path=None):
     """ Process and save a lattice into *.npz format
 
@@ -264,7 +264,6 @@ def main(args):
             pool.starmap(process_one_lattice, zip(lattice_list, repeat(dst_dir),
                                                 repeat(wordvec), repeat(subword_embedding),
                                                 repeat(args.embed_apostrophe),
-                                                repeat(args.uniform_subword_durations),
                                                 repeat(processed_subset_list[i]))
             )
 

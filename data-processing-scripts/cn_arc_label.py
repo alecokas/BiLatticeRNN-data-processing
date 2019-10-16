@@ -74,10 +74,6 @@ def main():
     """Main function for lattice arc tagging."""
     parser = argparse.ArgumentParser(description='lattice pre-processing')
     parser.add_argument(
-        '-ctm', '--ctm-dir', type=str, required=True,
-        help='Directory containing reference CTM files for arc tagging (*.stm file).'
-    )
-    parser.add_argument(
         '-d', '--dst-dir', type=str, required=True,
         help='The directory in which to save the output files'
     )
@@ -93,6 +89,10 @@ def main():
         '-b', '--one-best', type=str,
         required=True,
         help='Path to the one best transcription (*.mlf.det file) for the confusion network files given in file-list-dir.'
+    )
+    parser.add_argument(
+        '-ctm', '--ctm-dir', type=str, required=True,
+        help='Directory containing reference CTM files for arc tagging (*.stm file).'
     )
     parser.add_argument(
         '-n', '--num-threads',

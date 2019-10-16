@@ -23,7 +23,7 @@ def remove_and_save(names_to_remove, subset_list_file):
 
     reduced_dataset_path = os.path.join(str(subset_list_file) + '.reduced')
     with open(reduced_dataset_path, 'w') as reduced_subset_file:
-        reduced_subset_file.write(''.join(subset_list))
+        reduced_subset_file.write('\n'.join(subset_list))
 
 def parse_arguments(args_to_parse):
     """ Parse the command line arguments.

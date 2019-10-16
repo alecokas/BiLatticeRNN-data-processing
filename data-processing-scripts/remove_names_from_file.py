@@ -5,11 +5,13 @@ import sys
 
 def get_names_to_remove(path):
     with open(path, 'r') as remove_file:
-        return remove_file.read().splitlines()
+        names_to_remove = remove_file.read().splitlines()
+        return list(map(str.strip, names_to_remove))
 
 def remove_and_save(names_to_remove, subset_list_file):
     with open(subset_list_file, 'r') as subset_file:
         subset_list = subset_file.readlines()
+        subset_list = list(map(str.strip, subset_list))
 
     original_subset_size = len(subset_list)
     for path in list(subset_list):
@@ -35,7 +37,7 @@ def parse_arguments(args_to_parse):
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument(
-        '-i', '--remove-list-path', type=str,
+        '-r', '--remove-list-path', type=str,
         help="Path to the file containing the list of names to remove."
     )
     parser.add_argument(

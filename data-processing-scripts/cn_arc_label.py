@@ -66,13 +66,14 @@ def label(lattice_path, ctm_dir, dst_dir, baseline_dict, np_conf_dir, threshold=
                 assert seq_1 == seq_2
                 np.savez(target_name, target=target, indices=indices, ref=ref)
             else:
-                LOGGER.info("Warning: Skiped target {} - Empty label sequence for the one-best".format(target_name))
+                print("Warning: Skiped target {} - Empty label sequence for the one-best".format(target_name))
+                LOGGER.error("Warning: Skiped target {} - Empty label sequence for the one-best".format(target_name))
         except KeyError:
-            LOGGER.info("ERROR: baseline does not contain this lattice %s" %name)
+            LOGGER.error("ERROR: baseline does not contain this lattice %s" %name)
         except AssertionError:
-            LOGGER.info("ERROR: reference and one-best do not match")
-            LOGGER.info(name, indices, ref)
-            LOGGER.info(seq_1, seq_2)
+            LOGGER.error("ERROR: reference and one-best do not match")
+            LOGGER.error(name, indices, ref)
+            LOGGER.error(seq_1, seq_2)
 
 def main(args):
     """Main function for lattice arc tagging."""

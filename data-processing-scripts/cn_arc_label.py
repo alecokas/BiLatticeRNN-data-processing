@@ -9,6 +9,7 @@ import levenshtein_arc_label
 from multiprocessing import Pool
 import numpy as np
 import os
+import sys
 import utils
 
 def cn_pass_lev(cn_path, np_cn_path, start_frame, ctm_file, coeff=0.5):
@@ -57,21 +58,52 @@ def label(lattice_path, ctm_dir, dst_dir, baseline_dict, np_conf_dir, threshold=
         try:
             start_frame = int(name_parts[-2])/100.
             indices, seq_1, edge_labels = cn_pass_lev(lattice_path, np_lattice_path, start_frame, ctm_file, threshold)
-            target = np.array(edge_labels, dtype='f')
-            print("%s\t\t%f" %(name, np.mean(target)))
-            ref, seq_2 = baseline_dict[name]
-            assert len(indices) == len(ref)
-            assert seq_1 == seq_2
-            np.savez(target_name, target=target, indices=indices, ref=ref)
+            if indices and seq_1:
+                target = np.array(edge_labels, dtype='f')
+                print("%s\t\t%f" %(name, np.mean(target)))
+                ref, seq_2 = baseline_dict[name]
+                assert len(indices) == len(ref)
+                assert seq_1 == seq_2
+                np.savez(target_name, target=target, indices=indices, ref=ref)
+            else:
+                LOGGER.info("Warning: Skiped target {} - Empty label sequence for the one-best".format(target_name))
         except KeyError:
-            print("ERROR: baseline does not contain this lattice %s" %name)
+            LOGGER.info("ERROR: baseline does not contain this lattice %s" %name)
         except AssertionError:
-            print("ERROR: reference and one-best do not match")
-            print(name, indices, ref)
-            print(seq_1, seq_2)
+            LOGGER.info("ERROR: reference and one-best do not match")
+            LOGGER.info(name, indices, ref)
+            LOGGER.info(seq_1, seq_2)
 
-def main():
+def main(args):
     """Main function for lattice arc tagging."""
+
+    global LOGGER
+    LOGGER = utils.get_logger(args.verbose, log_file_name=os.path.join(args.file_list_dir, 'targets-info'))
+
+    dst_dir = os.path.join(args.dst_dir, 'target_overlap_{}'.format(args.threshold))
+    utils.mkdir(dst_dir)
+
+    np_conf_dir = os.path.join(args.processed_npz_dir)
+    ctm_dir = os.path.join(args.ctm_dir)
+    baseline_dict = load_baseline(args.one_best)
+
+    file_list = []
+    subset_list = ['train.cn.txt', 'cv.cn.txt', 'test.cn.txt']
+    for subset in subset_list:
+        file_list.append(os.path.join(args.file_list_dir, subset))
+
+    cn_list = []
+    for cn_subset_file in file_list:
+        with open(os.path.abspath(cn_subset_file), 'r') as file_in:
+            for path_to_lat in file_in:
+                cn_list.append(path_to_lat.strip())
+
+    for cn in cn_list:
+        label(cn, ctm_dir, dst_dir, baseline_dict, np_conf_dir, args.threshold)
+
+def parse_arguments(args_to_parse):
+    """ Parse the command line arguments.
+    """
     parser = argparse.ArgumentParser(description='lattice pre-processing')
     parser.add_argument(
         '-d', '--dst-dir', type=str, required=True,
@@ -104,28 +136,14 @@ def main():
         help='Cut-off threshold for tagging decision',
         type=float, default=0.1
     )
-    args = parser.parse_args()
-
-    dst_dir = os.path.join(args.dst_dir, 'target_overlap_{}'.format(args.threshold))
-    utils.mkdir(dst_dir)
-
-    np_conf_dir = os.path.join(args.processed_npz_dir)
-    ctm_dir = os.path.join(args.ctm_dir)
-    baseline_dict = load_baseline(args.one_best)
-
-    file_list = []
-    subset_list = ['train.cn.txt', 'cv.cn.txt', 'test.cn.txt']
-    for subset in subset_list:
-        file_list.append(os.path.join(args.file_list_dir, subset))
-
-    cn_list = []
-    for cn_subset_file in file_list:
-        with open(os.path.abspath(cn_subset_file), 'r') as file_in:
-            for path_to_lat in file_in:
-                cn_list.append(path_to_lat.strip())
-
-    for cn in cn_list:
-        label(cn, ctm_dir, dst_dir, baseline_dict, np_conf_dir, args.threshold)
+    parser.add_argument(
+        '-v', '--verbose',
+        help='Set logging level: ERROR (default), '\
+             'WARNING (-v), INFO (-vv), DEBUG (-vvv)',
+        action='count', default=0
+    )
+    return parser.parse_args()
 
 if __name__ == '__main__':
-    main()
+    args = parse_arguments(sys.argv[1:])
+    main(args)

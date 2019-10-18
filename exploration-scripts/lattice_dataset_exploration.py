@@ -83,6 +83,7 @@ def raw_lattice_exploration(args):
 
 def count(array):
     assert array.ndim == 1
+    array = array[array != np.array(None)]
     num_ones = np.sum(array)
     num_zeros = array.shape[0] - num_ones
     return num_zeros, num_ones

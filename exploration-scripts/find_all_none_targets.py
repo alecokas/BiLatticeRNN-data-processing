@@ -13,6 +13,7 @@ def find_anomalous_targets(directory_to_search):
                 candidate_target = np.load(candidate_path).items()
                 reference_key, reference = candidate_target[-1]
                 if reference_key != 'ref':
+                    print(candidate_target)
                     raise Exception('Expected to find the reference but found {}'.format(reference_key))
                 if None in reference:
                     anomalous_target_list.append(name.split('.')[0])

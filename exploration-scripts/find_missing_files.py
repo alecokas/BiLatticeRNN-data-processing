@@ -27,7 +27,8 @@ def files_to_search_for(file_name):
 def main(args):
     """ Primary entry point for script which finds missing files """
     if args.full_paths:
-        find_non_existent_files(args.list_file)
+        files_to_check = files_to_search_for(args.list_file)
+        missing_files = find_non_existent_files(files_to_check)
     else:
         files_in_dir = set_of_processed_file_names(
             directory_to_search=args.directory_to_search,
@@ -54,7 +55,7 @@ def parse_arguments(args_to_parse):
         help='A file with a list of names to check (*.lst) or (*.npz)'
     )
     parser.add_argument(
-        '-d', '--directory-to-search', type=str, required=True,
+        '-d', '--directory-to-search', type=str, default='.',
         help='Directory to search for missing *.npz files'
     )
     parser.add_argument(

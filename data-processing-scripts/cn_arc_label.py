@@ -22,28 +22,33 @@ def cn_pass_lev(cn_path, np_cn_path, start_frame, ctm_file, coeff=0.5):
     assert cum_sum[-1] == len(confusion_net.cn_arcs), "Wrong number of arcs."
     edge_labels = []
     sequence, indices = [], []
-    tags = levenshtein_arc_label.levenshtein_tagging(ctm_file, cn_path, np_cn_path)
-    for i in range(confusion_net.num_sets):
-        tmp_post, tmp_edge, tmp_idx = -float('inf'), None, None
-        for j in range(cum_sum[i], cum_sum[i+1]):
-            edge_info = confusion_net.cn_arcs[j]
-            edge_label = tags[j]
-            edge_labels.append(edge_label)
-            if edge_info[3] > tmp_post:
-                tmp_post = edge_info[3]
-                tmp_idx = j
-                tmp_edge = edge_info
-        sequence.append(tmp_edge[0])
-        indices.append(tmp_idx)
 
-    clipped_indices = []
-    clipped_seq = []
-    ignore = ['!NULL', '<s>', '</s>', '<hes>']
-    for i, j in zip(sequence, indices):
-        if i not in ignore:
-            clipped_seq.append(i)
-            clipped_indices.append(j)
-    return clipped_indices, clipped_seq, edge_labels
+    if os.path.isfile(cn_path) and os.path.isfile(np_cn_path):
+        tags = levenshtein_arc_label.levenshtein_tagging(ctm_file, cn_path, np_cn_path)
+        for i in range(confusion_net.num_sets):
+            tmp_post, tmp_edge, tmp_idx = -float('inf'), None, None
+            for j in range(cum_sum[i], cum_sum[i+1]):
+                edge_info = confusion_net.cn_arcs[j]
+                edge_label = tags[j]
+                edge_labels.append(edge_label)
+                if edge_info[3] > tmp_post:
+                    tmp_post = edge_info[3]
+                    tmp_idx = j
+                    tmp_edge = edge_info
+            sequence.append(tmp_edge[0])
+            indices.append(tmp_idx)
+
+        clipped_indices = []
+        clipped_seq = []
+        ignore = ['!NULL', '<s>', '</s>', '<hes>']
+        for i, j in zip(sequence, indices):
+            if i not in ignore:
+                clipped_seq.append(i)
+                clipped_indices.append(j)
+        return clipped_indices, clipped_seq, edge_labels
+    else:
+        raise Exception('File does not exist!')
+        return [], [], []
 
 def label(lattice_path, ctm_dir, dst_dir, baseline_dict, np_conf_dir, threshold=0.1):
     """Read HTK confusion networks and label each arc."""
